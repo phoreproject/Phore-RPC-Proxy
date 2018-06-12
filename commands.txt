@@ -1,0 +1,22 @@
+1. download and start redis
+docker pull redis 
+docker run -p 6379:6379 --name redis_instance -t redis
+
+2. Set environmental variables 
+REDIS_HOST = redis docker ip
+REDIS_PORT = 6379 (default)
+
+3. Install node.js
+
+
+4. Start phored instance
+.\phored.exe -server -printtoconsole -rest -blocknotify="node ./blocknotify.js blocknotify %s"
+
+or for transactions: 
+-mempoolnotify="node ./blocknotify.js mempoolnotify %s"
+
+5. Download node packages
+npm install in project directory.
+
+5. Start index.js
+node index.js
