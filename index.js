@@ -21,6 +21,7 @@ redisInstance.subClient.on('message', (channel, message) => {
 
 io.on('connection', (socket) => {
     // client connected
+    console.log("Client", socket.id, "connected");
 
     socket.on('data', (message) => {
         // client send command
