@@ -7,13 +7,26 @@ const express = require('express'),
 let app = express();
 let server = app.listen(config.web_port);
 let io = socketio(server);
-let redisSubscriber = redis.createClient(config.redis_port, config.redis_host);
 
 app.use(express.static('static'));
-io.adapter(socketioRedis({host: config.redis_host, port: config.redis_port}));
+let redisInstance = socketioRedis({host: config.redis_host, port: config.redis_port,
+    subClient: redis.createClient(config.redis_port, config.redis_host),
+    pubClient: redis.createClient(config.redis_port, config.redis_host)});
+redisInstance.subClient.subscribe(config.redis_blocknotify_key_name);
+io.adapter(redisInstance);
 
-
-redisSubscriber.on('message', (channel, message) => {
-   console.log('notification type:', config.redis_blocknotify_key_name + ', message:', message);
+redisInstance.subClient.on('message', (channel, message) => {
+    console.log(channel, message)
 });
-redisSubscriber.subscribe(config.redis_blocknotify_key_name);
+
+io.on('connection', (socket) => {
+    // client connected
+
+    socket.on('data', (message) => {
+        // client send command
+    });
+
+    socket.on('close', () => {
+        //client disconnected
+    });
+});
