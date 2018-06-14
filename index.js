@@ -17,8 +17,20 @@ let redisIO = socketioRedis({host: config.redis_host, port: config.redis_port,
 redisIO.subClient.subscribe(config.redis_blocknotify_key_name);
 io.adapter(redisIO);
 
-let createFormData = function(method) {
-    return {"jsonrpc": "2.0", "method": method, "params": arguments, "id": 1}
+
+let createJsonData = function(method) {
+    let args = [];
+    for (let i = 1; i < arguments.length; i++) {
+        console.log(arguments[i]);
+        args.push(arguments[i]);
+    }
+    return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
+};
+
+let createBasicAuthHeader = function() {
+    return {
+        Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
+    }
 };
 
 // new block appeared
@@ -26,13 +38,20 @@ redisIO.subClient.on('message', (channel, message) => {
     // write to all subscribed clients
     console.log(channel, message);
     if (channel === config.redis_blocknotify_key_name) {
-        io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash , message);
+        // send new block to all subscribed clients
+        io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
+
+        // gen info about block from phored
         request.post(config.phored_host + ':' + config.phored_port, {
-                json: true, formData: createFormData(eventNames.rpc.getblock, message)
+                headers: createBasicAuthHeader(),
+                json: createJsonData(eventNames.rpc.getblock, message)
             },
             (err, res, body) => {
-            if (err) { return console.log(err); }
-            console.log(body)
+                if (err || res.statusCode !== 200) {
+                    return console.log(err);
+                }
+
+                io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, body.result);
         });
     }
 });
@@ -53,8 +72,10 @@ io.on('connect', (socket) => {
     });
 
     socket.on(eventNames.subscriptions.unsubscribeAll, () => {
-        for (let subscriptionName in eventNames.subscriptions) {
-            socket.leave(subscriptionName);
+        for (let subscriptionName in Object.keys(eventNames.subscriptions)) {
+            if(eventNames.subscriptions.hasOwnProperty(subscriptionName)) {
+                socket.leave(subscriptionName);
+            }
         }
     });
 
