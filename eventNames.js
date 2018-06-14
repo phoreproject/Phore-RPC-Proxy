@@ -1,10 +1,15 @@
 module.exports = {
     canals: {
         subscribeBlockRoom: "subscribeBlockRoom",
-        subscribeBlockHashRoom: "subscribeBlockHashRoom"
+        subscribeBlockHashRoom: "subscribeBlockHashRoom",
+        subscribeBlockRoom: "subscribeBlockRoom",
     },
     subscriptions: {
         subscribeBlockHash: "subscribeBlockHash",
-        unsubscribeAll: "unsubscribeAll"
+        subscribeBlock: "subscribeBlock",
+        unsubscribeAll: "unsubscribeAll",
+    },
+    rpc: {
+        getblock: "getblock",
     }
 };

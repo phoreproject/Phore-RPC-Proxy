@@ -11,8 +11,16 @@ socket.on('connect', function (connection) {
     socket.emit(eventNames.subscriptions.subscribeBlockHash, (response) => {
         console.log(response);
     });
+
+    socket.emit(eventNames.subscriptions.subscribeBlock, (response) => {
+        console.log(response);
+    })
 });
 
 socket.on(eventNames.subscriptions.subscribeBlockHash, (message) => {
+    console.log("new block hash discovered", message);
+});
+
+socket.on(eventNames.subscriptions.subscribeBlock, (message) => {
     console.log("new block discovered", message);
 });
