@@ -9,25 +9,37 @@ let server = app.listen(config.web_port);
 let io = socketio(server);
 
 app.use(express.static('static'));
-let redisInstance = socketioRedis({host: config.redis_host, port: config.redis_port,
+let redisIO = socketioRedis({host: config.redis_host, port: config.redis_port,
     subClient: redis.createClient(config.redis_port, config.redis_host),
     pubClient: redis.createClient(config.redis_port, config.redis_host)});
-redisInstance.subClient.subscribe(config.redis_blocknotify_key_name);
-io.adapter(redisInstance);
+redisIO.subClient.subscribe(config.redis_blocknotify_key_name);
+io.adapter(redisIO);
 
-redisInstance.subClient.on('message', (channel, message) => {
-    console.log(channel, message)
+// new block appeared
+redisIO.subClient.on('message', (channel, message) => {
+    // write to all subscribed clients -> it is easy part
+    console.log(channel, message);
+    if (channel === config.redis_blocknotify_key_name) {
+        io.in("subscribeBlockRoom").emit("subscribeBlock" , message);
+    }
 });
 
-io.on('connection', (socket) => {
-    // client connected
+// new socket client connection
+io.on('connect', (socket) => {
     console.log("Client", socket.id, "connected");
-
-    socket.on('data', (message) => {
-        // client send command
+    socket.on("subscribeBlock", (fn) => {
+        console.log("Client", socket.id , "subscribe to new blocks notification");
+        socket.join("subscribeBlockRoom");
+        fn("Success!");
     });
 
-    socket.on('close', () => {
+    socket.on("unsubscribeAll", () => {
+        socket.leave("subscribeBlockRoom");
+    });
+
+    socket.on('disconnect', () => {
+        console.log("Client", socket.id, "disconnected");
         //client disconnected
+
     });
 });
