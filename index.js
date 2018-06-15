@@ -14,7 +14,7 @@ app.use(express.static('static'));
 let redisIO = socketioRedis({host: config.redis_host, port: config.redis_port,
     subClient: redis.createClient(config.redis_port, config.redis_host),
     pubClient: redis.createClient(config.redis_port, config.redis_host)});
-redisIO.subClient.subscribe(config.redis_blocknotify_key_name);
+redisIO.subClient.subscribe(eventNames.redis.blocknotify);
 io.adapter(redisIO);
 
 
@@ -37,7 +37,7 @@ let createBasicAuthHeader = function() {
 redisIO.subClient.on('message', (channel, message) => {
     // write to all subscribed clients
     console.log(channel, message);
-    if (channel === config.redis_blocknotify_key_name) {
+    if (channel === eventNames.redis.blocknotify) {
         // send new block to all subscribed clients
         io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
 

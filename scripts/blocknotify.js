@@ -1,13 +1,14 @@
-let redis = require('redis');
-let config = require('../config.js');
+const redis = require('redis');
+const config = require('../config.js');
+const eventNames = require('../eventNames.js');
 
 if(process.argv.length < 4) {
 	console.log('No enough parameters');
 	process.exit(1);
 }
 
-if (process.argv[2] !== config.redis_blocknotify_key_name &&
-    process.argv[2] !== config.redis_mempoolnotify_key_name) {
+if (process.argv[2] !== eventNames.redis.blocknotify &&
+    process.argv[2] !== eventNames.redis.mempoolnotify) {
     console.log('Unsupported option used');
     process.exit(1);
 }

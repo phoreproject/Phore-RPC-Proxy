@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.16.3",
+    "ncp": "^2.0.0",
     "process": "^0.11.10",
     "redis": "^2.8.0",
     "request": "^2.87.0",

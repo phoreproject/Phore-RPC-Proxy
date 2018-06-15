@@ -2,7 +2,6 @@ module.exports = {
     canals: {
         subscribeBlockRoom: "subscribeBlockRoom",
         subscribeBlockHashRoom: "subscribeBlockHashRoom",
-        subscribeBlockRoom: "subscribeBlockRoom",
     },
     subscriptions: {
         subscribeBlockHash: "subscribeBlockHash",
@@ -11,5 +10,9 @@ module.exports = {
     },
     rpc: {
         getblock: "getblock",
+    },
+    redis: {
+        blocknotify: 'blocknotify',
+        mempoolnotify: 'mempoolnotify',
     }
 };
