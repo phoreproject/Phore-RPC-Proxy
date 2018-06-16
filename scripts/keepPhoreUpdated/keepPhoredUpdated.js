@@ -1,4 +1,4 @@
-const config = require('../../config.js');
+const config = require('./config.js');
 const {execFile} = require('child_process');
 const util = require('util');
 const fs = require('fs');
