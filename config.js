@@ -9,6 +9,6 @@ module.exports = {
     phore_cli: process.env.PHORE_CLI != null ? process.env.PHORE_CLI : './phore-cli',
     rpc_user: process.env.RPC_USER != null ? process.env.RPC_USER : 'phorerpc',
     rpc_pass: process.env.RPC_PASS != null ? process.env.RPC_PASS : 'CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b',
-    backup_data_dir: process.env.BACKUP_DST != null ? proces.env.BACKUP_DST : './backup',
+    backup_data_dir: process.env.PHORED_BACKUP_DIR != null ? process.env.PHORED_BACKUP_DIR : './backup',
     phored_data_dir: process.env.PHORED_DATA_DIR != null ? process.env.PHORED_DATA_DIR : '../_data',
 };

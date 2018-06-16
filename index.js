@@ -11,14 +11,16 @@ let server = app.listen(config.web_port);
 let io = socketio(server);
 
 app.use(express.static('static'));
-let redisIO = socketioRedis({host: config.redis_host, port: config.redis_port,
+let redisIO = socketioRedis({
+    host: config.redis_host, port: config.redis_port,
     subClient: redis.createClient(config.redis_port, config.redis_host),
-    pubClient: redis.createClient(config.redis_port, config.redis_host)});
+    pubClient: redis.createClient(config.redis_port, config.redis_host)
+});
 redisIO.subClient.subscribe(eventNames.redis.blocknotify);
 io.adapter(redisIO);
 
 
-let createJsonData = function(method) {
+let createJsonData = function (method) {
     let args = [];
     for (let i = 1; i < arguments.length; i++) {
         console.log(arguments[i]);
@@ -27,7 +29,7 @@ let createJsonData = function(method) {
     return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
 };
 
-let createBasicAuthHeader = function() {
+let createBasicAuthHeader = function () {
     return {
         Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
     }
@@ -52,7 +54,7 @@ redisIO.subClient.on('message', (channel, message) => {
                 }
 
                 io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, body.result);
-        });
+            });
     }
 });
 
@@ -60,20 +62,20 @@ redisIO.subClient.on('message', (channel, message) => {
 io.on('connect', (socket) => {
     console.log("Client", socket.id, "connected");
     socket.on(eventNames.subscriptions.subscribeBlockHash, (fn) => {
-        console.log("Client", socket.id , "subscribe to new blocks hash notification");
+        console.log("Client", socket.id, "subscribe to new blocks hash notification");
         socket.join(eventNames.canals.subscribeBlockHashRoom);
         fn("Success!");
     });
 
     socket.on(eventNames.subscriptions.subscribeBlock, (fn) => {
-        console.log("Client", socket.id , "subscribe to new blocks notification");
+        console.log("Client", socket.id, "subscribe to new blocks notification");
         socket.join(eventNames.canals.subscribeBlockRoom);
         fn("Success!");
     });
 
     socket.on(eventNames.subscriptions.unsubscribeAll, () => {
         for (let subscriptionName in Object.keys(eventNames.subscriptions)) {
-            if(eventNames.subscriptions.hasOwnProperty(subscriptionName)) {
+            if (eventNames.subscriptions.hasOwnProperty(subscriptionName)) {
                 socket.leave(subscriptionName);
             }
         }
@@ -82,6 +84,5 @@ io.on('connect', (socket) => {
     socket.on('disconnect', () => {
         console.log("Client", socket.id, "disconnected");
         //client disconnected
-
     });
 });
