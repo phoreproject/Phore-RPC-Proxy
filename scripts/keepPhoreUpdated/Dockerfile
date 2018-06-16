@@ -1,9 +1,9 @@
 FROM node:9
 
 WORKDIR /app
-COPY ../../package.json /app
+COPY package.json /app
 RUN npm install
-COPY ../.. /app
+COPY . /app
 
 RUN wget -O phore.tar.gz https://github.com/phoreproject/Phore/releases/download/v1.2.2/phore-1.2.2-x86_64-linux-gnu.tar.gz
 RUN mkdir phored
