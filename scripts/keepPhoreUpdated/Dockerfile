@@ -9,6 +9,7 @@ RUN wget -O phore.tar.gz https://github.com/phoreproject/Phore/releases/download
 RUN mkdir phored
 RUN tar -xzf phore.tar.gz -C phored --strip-components=1
 
+RUN mkdir ~/.phore
 RUN echo "rpcuser=phorerpc" >> ~/.phore/phore.conf
 RUN echo "rpcpassword=CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b" >> ~/.phore/phore.conf
 
