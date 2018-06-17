@@ -1,5 +1,5 @@
 const config = require('./config.js');
-const {execFile} = require('child_process');
+const {execFile, spawn} = require('child_process');
 const util = require('util');
 const fs = require('fs');
 const ncp = require('ncp').ncp;
@@ -12,7 +12,7 @@ const KEEP_MAX_BACKUPS = 12;                     // 12 backups
 
 function createPhoredInstance() {
     console.log("Starting phored");
-    return execFile(config.phored_exec, (error, stdout, stderr) => {
+    return spawn(config.phored_exec, ['-printtoconsole'], {stdio: 'inherit'}, (error, stdout, stderr) => {
         if (error) {
             throw error;
         }

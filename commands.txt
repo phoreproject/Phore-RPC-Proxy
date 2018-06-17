@@ -2,11 +2,21 @@
 docker pull redis 
 docker run -p 6379:6379 --name redis_instance -t redis
 
-2. Set environmental variables 
+2. download and start phore db updater
+clone this repo:
+git clone https://github.com/phoreproject/Phore-RPC-Proxy
+cd ./Phore-RPC-Proxy/script/keepPhoreUpdated
+docker build -t keep_phore_updated .
+
+for sharing docker volume on host:
+mkdir phore_database_backup
+docker run -t keep_phore_updated -v phore_database_backup:/data
+
+
+
+3. Set environmental variables
 REDIS_HOST = redis docker ip
 REDIS_PORT = 6379 (default)
-
-3. Install node.js
 
 
 4. Start phored instance

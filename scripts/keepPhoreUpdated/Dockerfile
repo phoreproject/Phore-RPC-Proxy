@@ -16,6 +16,6 @@ RUN echo "rpcpassword=CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b" >> ~/.phore/
 ENV PHORE_CLI ./phored/bin/phore-cli
 ENV PHORED_EXEC ./phored/bin/phored
 ENV PHORED_DATA_DIR ~/.phore/
-ENV PHORED_BACKUP_DIR ./backup_dir
+ENV PHORED_BACKUP_DIR /data/backup_dir
 
 CMD npm start
