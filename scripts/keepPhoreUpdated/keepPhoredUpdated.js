@@ -11,6 +11,7 @@ const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60; // 1 hour
 const KEEP_MAX_BACKUPS = 12;                     // 12 backups
 
 function createPhoredInstance() {
+    console.log("Starting phored");
     return execFile(config.phored_exec, (error, stdout, stderr) => {
         if (error) {
             throw error;
@@ -21,6 +22,7 @@ function createPhoredInstance() {
 function closePhoredByCLI() {
     return new Promise((resolve, reject) => {
         setTimeout(execFile, CREATE_SNAPSHOT_EVERY_MS, config.phore_cli, ['stop'], (error, stdout, stderr) => {
+            console.log("Stoping phored");
             if (error) {
                 reject(error);
             }
@@ -135,6 +137,7 @@ async function copyData() {
 
 async function main() {
     try {
+        console.log("Started");
         while (true) {
             let phoredInstance = createPhoredInstance();
             await closePhoredByCLI();
