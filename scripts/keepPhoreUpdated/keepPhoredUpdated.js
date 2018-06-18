@@ -12,22 +12,27 @@ const KEEP_MAX_BACKUPS = 12;                     // 12 backups
 
 function createPhoredInstance() {
     console.log("Starting phored");
-    return spawn(config.phored_exec, ['-printtoconsole'], {stdio: 'inherit'}, (error, stdout, stderr) => {
-        if (error) {
-            throw error;
-        }
-    });
+    return spawn(config.phored_exec,
+        ['-printtoconsole', '-rpcuser=' + config.rpc_user, '-rpcpassword=' + config.rpc_pass],
+        {stdio: 'inherit'},
+        (error, stdout, stderr) => {
+            if (error) {
+                throw error;
+            }
+        });
 }
 
 function closePhoredByCLI() {
     return new Promise((resolve, reject) => {
-        setTimeout(execFile, CREATE_SNAPSHOT_EVERY_MS, config.phore_cli, ['stop'], (error, stdout, stderr) => {
-            console.log("Stoping phored");
-            if (error) {
-                reject(error);
-            }
-            resolve();
-        });
+        setTimeout(execFile, CREATE_SNAPSHOT_EVERY_MS, config.phore_cli,
+            ['-rpcuser=' + config.rpc_user, '-rpcpassword=' + config.rpc_pass, 'stop'],
+            (error, stdout, stderr) => {
+                console.log("Stoping phored");
+                if (error) {
+                    reject(error);
+                }
+                resolve();
+            });
     });
 }
 
@@ -100,7 +105,7 @@ async function copyData() {
         }
 
         const dirList = walkDirSync(config.backup_data_dir);
-        dirList.sort((a,b) =>{
+        dirList.sort((a, b) => {
             const a_birth = a.stats.birthtimeMs;
             const b_birth = b.stats.birthtimeMs;
 
@@ -108,7 +113,7 @@ async function copyData() {
         });
 
         if (dirList.length > KEEP_MAX_BACKUPS) {
-            for (let i = 0; i < dirList.length - KEEP_MAX_BACKUPS; i++){
+            for (let i = 0; i < dirList.length - KEEP_MAX_BACKUPS; i++) {
                 deleteFolderRecursive(dirList[i].path);
             }
         }
