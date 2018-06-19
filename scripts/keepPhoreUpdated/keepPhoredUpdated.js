@@ -97,11 +97,11 @@ async function copyData() {
     return new Promise((resolve, reject) => {
         let copiedDirsCnt = 0;
         if (!fs.existsSync(config.phored_data_dir)) {
-            reject("Wrong data dir path");
+            reject("Wrong data dir path " + config.phored_data_dir);
         }
 
         if (!fs.existsSync(config.backup_data_dir)) {
-            fs.mkdirSync(config.backup_data_dir);
+            reject("Wrong backup dir path " + config.backup_data_dir);
         }
 
         const dirList = walkDirSync(config.backup_data_dir);

@@ -9,9 +9,12 @@ RUN wget -O phore.tar.gz https://github.com/phoreproject/Phore/releases/download
 RUN mkdir phored
 RUN tar -xzf phore.tar.gz -C phored --strip-components=1
 
+RUN mkdir /root/.phore/
+RUN mkdir -p /data/backup_dir
+
 ENV PHORE_CLI ./phored/bin/phore-cli
 ENV PHORED_EXEC ./phored/bin/phored
-ENV PHORED_DATA_DIR ~/.phore/
+ENV PHORED_DATA_DIR /root/.phore/
 ENV PHORED_BACKUP_DIR /data/backup_dir
 ENV RPC_USER phorerpc
 ENV RPC_PASS CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b
