@@ -1,3 +1,6 @@
+# To start that docker file use
+# docker build -t keep_phore_updated .
+# docker run -v LOCAL_BACKUP_DIR:/data/backup_dir -t keep_phore_updated
 FROM node:10
 
 WORKDIR /usr/src/app/
