@@ -12,4 +12,6 @@ RUN tar -xzf phore.tar.gz -C phored --strip-components=1
 COPY . /usr/src/app/phored/bin
 WORKDIR /usr/src/app/phored/bin
 
+ENV REDIS_HOST 127.0.0.1
+
 CMD ["./phored", "-server", "-printtoconsole", "-rpcuser=phorerpc", "-rpcpassword=CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b", "-rest", "-blocknotify=\"node ./blocknotify.js blocknotify %s\""]

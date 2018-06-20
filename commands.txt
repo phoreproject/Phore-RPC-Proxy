@@ -1,11 +1,11 @@
 1. download and start redis
 docker pull redis 
-docker run -p 6379:6379 --name redis_instance -t redis
+docker run -p 6379:6379 --name redis_instance -td redis
 
 2. download and start phore db updater
 clone this repo:
 git clone https://github.com/phoreproject/Phore-RPC-Proxy
-cd ./Phore-RPC-Proxy/script/keepPhoreUpdated
+cd ./script/keepPhoreUpdated
 docker build -t keep_phore_updated .
 docker run -t keep_phore_updated
 
@@ -16,15 +16,13 @@ for sharing docker volume with host add additional docker run parameter:
 REDIS_HOST = redis docker ip
 REDIS_PORT = 6379 (default)
 
-
 4. Start phored instance
-.\phored.exe -server -printtoconsole -rest -blocknotify="node ./blocknotify.js blocknotify %s"
+to connect to previously runned redis instance you need to connect containers to same network
+- docker network create phoreNet
+- set correct REDIS_HOST and REDIS_PORT in phored/Dockerfile
+- cd ./script/phored
+- docker build -t phored .
+- docker run -td phored
 
-or for transactions: 
--mempoolnotify="node ./blocknotify.js mempoolnotify %s"
-
-5. Download node packages
-npm install in project directory.
-
-5. Start index.js
-node index.js
+and connect all runned containers to net:
+docker network connect phoreNet $(docker ps -q)
