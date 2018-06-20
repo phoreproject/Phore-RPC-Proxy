@@ -1,6 +1,6 @@
 const redis = require('redis');
-const config = require('../config.js');
-const eventNames = require('../eventNames.js');
+const config = require('./config.js');
+const eventNames = require('./eventNames.js');
 
 if (process.argv.length < 4) {
     console.log('No enough parameters');
