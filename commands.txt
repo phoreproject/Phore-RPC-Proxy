@@ -19,7 +19,7 @@ REDIS_PORT = 6379 (default)
 4. Start phored instance
 to connect to previously runned redis instance you need to connect containers to same network
 - docker network create phoreNet
-- set correct REDIS_HOST and REDIS_PORT in phored/Dockerfile
+- set correct REDIS_HOST and REDIS_PORT in phored/Dockerfile or add -e for docker run cmd line
 - cd ./script/phored
 - docker build -t phored .
 - docker run -td phored
