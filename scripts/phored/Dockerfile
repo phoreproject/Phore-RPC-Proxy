@@ -16,5 +16,6 @@ ENV REDIS_HOST 127.0.0.1
 ENV REDIS_PORT 6379
 
 EXPOSE 11772
+EXPOSE 80
 
 CMD ["./phored", "-server", "-printtoconsole", "-rpcuser=phorerpc", "-rpcpassword=CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b", "-rest", "-blocknotify=\"node ./blocknotify.js blocknotify %s\""]

@@ -32,3 +32,8 @@ client.publish(process.argv[2], process.argv[3], (err, reply) => {
     client.quit();
     process.exit(0);
 });
+
+// no redis response after 60 sec, then stop process
+setTimeout(() => {
+    process.exit(4);
+}, 1000 * 60);
