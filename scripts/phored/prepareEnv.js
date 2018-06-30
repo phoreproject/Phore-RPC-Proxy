@@ -38,9 +38,7 @@ function main() {
                     }).createReadStream();
 
                     const dirName = objectInfo.Key.split("\\")[1];
-                    const fileName = dirName + ".tar";
                     const dirPath = path.join(config.phored_data_dir, dirName);
-                    const filePath = path.join(config.phored_data_dir, fileName);
 
                     const gunzip = zlib.createGunzip();
                     gunzip.on('error', (err) => {
