@@ -2,9 +2,13 @@ const config = require('./config.js');
 const {execFile, spawn} = require('child_process');
 const util = require('util');
 const fs = require('fs');
-const ncp = require('ncp').ncp;
+const fstream = require('fstream');
 const path = require('path');
 const async = require('async');
+const AWS = require('aws-sdk');
+const tar = require('tar-fs');
+const zlib = require('zlib');
+
 
 const DIRECTORIES_TO_COPY = ['blocks', 'chainstate', 'sporks', 'zerocoin'];
 const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60; // 1 hour
@@ -60,71 +64,32 @@ function getFormattedTime() {
     return year + "-" + month + "-" + day + "-" + hour + "-" + minute + "-" + second;
 }
 
-function walkDirSync(dir) {
-    const files = fs.readdirSync(dir);
-    let dirList = [];
-    files.forEach((file) => {
-        let stats = fs.statSync(path.join(dir, file));
-        if (stats.isDirectory()) {
-            dirList.push({path: path.join(dir, file), stats: stats});
-        }
-    });
-    return dirList;
+function createS3Instance() {
+    s3 = new AWS().S3();
+    AWS.config.update({region: config.backup_S3_region});
+
+    return s3;
 }
 
-function copyDir(srcDir, dstDir, callback) {
-    ncp(srcDir, dstDir, (err) => {
-        console.log("Backup", dstDir, "created successfully");
-        callback(null, !err);
-    })
-}
-
-function deleteFolderRecursive(dirPath) {
-    if (fs.existsSync(dirPath)) {
-        fs.readdirSync(dirPath).forEach((file, index) => {
-            let curPath = path.join(dirPath, file);
-            if (fs.lstatSync(curPath).isDirectory()) { // recurse
-                deleteFolderRecursive(curPath);
-            } else { // delete file
-                fs.unlinkSync(curPath);
-            }
-        });
-        fs.rmdirSync(dirPath);
-    }
-}
-
-async function copyData() {
+async function copyData(s3) {
     return new Promise((resolve, reject) => {
         let copiedDirsCnt = 0;
         if (!fs.existsSync(config.phored_data_dir)) {
             reject("Wrong data dir path " + config.phored_data_dir);
         }
 
-        if (!fs.existsSync(config.backup_data_dir)) {
-            reject("Wrong backup dir path " + config.backup_data_dir);
-        }
-
-        const dirList = walkDirSync(config.backup_data_dir);
-        dirList.sort((a, b) => {
-            const a_birth = a.stats.birthtimeMs;
-            const b_birth = b.stats.birthtimeMs;
-
-            return a_birth < b_birth ? -1 : (a_birth > b_birth ? 1 : 0);
-        });
-
-        if (dirList.length > KEEP_MAX_BACKUPS) {
-            for (let i = 0; i < dirList.length - KEEP_MAX_BACKUPS; i++) {
-                deleteFolderRecursive(dirList[i].path);
-            }
-        }
-
-        const dataStr = getFormattedTime();
-        fs.mkdirSync(path.join(config.backup_data_dir, dataStr));
-        console.log("Creating new backup in dir", path.join(config.backup_data_dir, dataStr));
+        const s3FilePrefix = getFormattedTime();
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
-            copyDir(path.join(config.phored_data_dir, directory),
-                path.join(config.backup_data_dir, dataStr, directory),
-                callback);
+            const body = fstream.Reader({type: "Directory", path: directory})
+                .pipe(tar.Pack())
+                .pipe(zlib.Gzip());
+
+            const params = {Bucket: config.backup_S3_dir, Key: fs, Body: body};
+            const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
+            s3.upload(params, options, function(err, data) {
+                console.log(err, data);
+            });
+
         }, (err, result) => {
             if (result) {
                 resolve();
@@ -143,11 +108,12 @@ async function copyData() {
 async function main() {
     try {
         console.log("Started");
+        const s3 = createS3Instance();
         while (true) {
             let phoredInstance = createPhoredInstance();
             await closePhoredByCLI();
             await isPhoredStopped(phoredInstance);
-            await copyData();
+            await copyData(s3);
         }
     }
     catch (e) {
