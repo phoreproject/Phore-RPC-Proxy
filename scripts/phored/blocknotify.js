@@ -1,6 +1,6 @@
-const redis = require('redis');
-const config = require('./config.js');
-const eventNames = require('./eventNames.js');
+const redis = require('redis'),
+    config = require('./config.js'),
+    eventNames = require('./eventNames.js');
 
 if (process.argv.length < 4) {
     console.log('No enough parameters');
@@ -35,5 +35,6 @@ client.publish(process.argv[2], process.argv[3], (err, reply) => {
 
 // no redis response after 60 sec, then stop process
 setTimeout(() => {
+    console.log('blocknotify.js connection timeout');
     process.exit(4);
 }, 1000 * 60);
