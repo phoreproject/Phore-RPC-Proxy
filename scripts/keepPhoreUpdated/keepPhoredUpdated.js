@@ -65,7 +65,7 @@ function getFormattedTime() {
 }
 
 function createS3Instance() {
-    s3 = new AWS().S3();
+    s3 = new AWS.S3();
     AWS.config.update({region: config.backup_S3_region});
 
     return s3;
@@ -73,21 +73,21 @@ function createS3Instance() {
 
 async function copyData(s3) {
     return new Promise((resolve, reject) => {
-        let copiedDirsCnt = 0;
         if (!fs.existsSync(config.phored_data_dir)) {
             reject("Wrong data dir path " + config.phored_data_dir);
         }
 
         const s3FilePrefix = getFormattedTime();
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
-            const body = fstream.Reader({type: "Directory", path: directory})
-                .pipe(tar.Pack())
-                .pipe(zlib.Gzip());
-
-            const params = {Bucket: config.backup_S3_dir, Key: fs, Body: body};
+            const dirPath = path.join(config.phored_data_dir, directory);
+            const body = tar.pack(dirPath).pipe(zlib.Gzip());
+            const params = {Bucket: config.backup_S3_dir, Key: dirPath, Body: body};
             const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
             s3.upload(params, options, function(err, data) {
-                console.log(err, data);
+                if (err) {
+                    callback(err, false);
+                }
+                callback(null, true);
             });
 
         }, (err, result) => {
