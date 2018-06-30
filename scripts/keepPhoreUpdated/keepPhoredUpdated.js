@@ -1,18 +1,17 @@
-const config = require('./config.js');
-const {execFile, spawn} = require('child_process');
-const util = require('util');
-const fs = require('fs');
-const fstream = require('fstream');
-const path = require('path');
-const async = require('async');
-const AWS = require('aws-sdk');
-const tar = require('tar-fs');
-const zlib = require('zlib');
+const config = require('./config.js'),
+    {execFile, spawn} = require('child_process'),
+    util = require('util'),
+    fs = require('fs'),
+    fstream = require('fstream'),
+    path = require('path'),
+    async = require('async'),
+    AWS = require('aws-sdk'),
+    tar = require('tar-fs'),
+    zlib = require('zlib');
 
 
 const DIRECTORIES_TO_COPY = ['blocks', 'chainstate', 'sporks', 'zerocoin'];
 const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60; // 1 hour
-const KEEP_MAX_BACKUPS = 12;                     // 12 backups
 
 function createPhoredInstance() {
     console.log("Starting phored");
@@ -64,10 +63,21 @@ function getFormattedTime() {
     return year + "-" + month + "-" + day + "-" + hour + "-" + minute + "-" + second;
 }
 
-function createS3Instance() {
+async function isS3InstanceAvailable(s3) {
+    return new Promise((resolve, reject) => {
+        s3.getObject({Bucket: config.backup_S3_dir, Key: config.backup_config_S3_file}, (err, data) => {
+            if (err && err.code !== "NoSuchKey") {
+                reject(err);
+            }
+            resolve();
+        })
+    })
+}
+
+async function createS3Instance() {
     s3 = new AWS.S3();
     AWS.config.update({region: config.backup_S3_region});
-
+    await isS3InstanceAvailable(s3);
     return s3;
 }
 
@@ -79,20 +89,32 @@ async function copyData(s3) {
 
         const s3FilePrefix = getFormattedTime();
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
-            const dirPath = path.join(config.phored_data_dir, directory);
-            const body = tar.pack(dirPath).pipe(zlib.Gzip());
-            const params = {Bucket: config.backup_S3_dir, Key: path.join(s3FilePrefix, directory), Body: body};
+            const body = tar.pack(path.join(config.phored_data_dir, directory)).pipe(zlib.Gzip());
+            const bucketDirPath = path.join(s3FilePrefix, directory);
+            const params = {Bucket: config.backup_S3_dir, Key: bucketDirPath, Body: body};
             const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
-            s3.upload(params, options, function(err, data) {
+            console.log("Uploading dir", directory, "to", bucketDirPath);
+            s3.upload(params, options, (err, data) => {
                 if (err) {
                     callback(err, false);
                 }
+                console.log("Dir", bucketDirPath ,"uploaded successfully");
                 callback(null, true);
             });
 
         }, (err, result) => {
             if (result) {
-                resolve();
+                s3.putObject({
+                    Bucket: config.backup_S3_dir,
+                    Key: config.backup_config_S3_file,
+                    Body: s3FilePrefix
+                }, (err, data) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    console.log("Successfully updated", config.backup_config_S3_file, "file");
+                    resolve();
+                })
             }
             else {
                 reject(err);
@@ -108,7 +130,7 @@ async function copyData(s3) {
 async function main() {
     try {
         console.log("Started");
-        const s3 = createS3Instance();
+        const s3 = await createS3Instance();
         while (true) {
             let phoredInstance = createPhoredInstance();
             await closePhoredByCLI();
