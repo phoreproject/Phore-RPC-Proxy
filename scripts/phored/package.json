@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "blocknotify.js",
   "scripts": {
-    "prepareEnv": "node prepareEnv.js"
+    "prepareEnv": "node prepareEnv.js",
+    "startPhored": "./phored -server -printtoconsole -rpcuser=phorerpc -rpcpassword=CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b -rest -blocknotify=\"node ./blocknotify.js blocknotify %s\""
   },
   "author": "",
   "license": "ISC",
