@@ -18,4 +18,4 @@ ENV REDIS_PORT 6379
 EXPOSE 11772
 EXPOSE 80
 
-ENTRYPOINT npm prepareEnv && npm startPhored
+ENTRYPOINT npm prestart && npm start
