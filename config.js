@@ -4,7 +4,7 @@ module.exports = {
     web_host: process.env.WEB_HOST != null ? process.env.WEB_HOST : 'http://127.0.0.1',
     web_port: process.env.WEB_PORT != null ? process.env.WEB_PORT : 8080,
     phored_host: process.env.PHORED_HOST != null ? process.env.PHORED_HOST : 'http://127.0.0.1',
-    phored_port: process.env.PHORED_PORT != null ? process.env.PHORED_PORT : 11772,
+    phored_port: process.env.PHORED_PORT != null ? process.env.PHORED_PORT : 11771,
     rpc_user: process.env.RPC_USER != null ? process.env.RPC_USER : 'phorerpc',
     rpc_pass: process.env.RPC_PASS != null ? process.env.RPC_PASS : 'CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b',
 };
