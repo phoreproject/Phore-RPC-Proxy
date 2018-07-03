@@ -8,6 +8,10 @@ const config = require('./config.js'),
 
 
 function main() {
+    if (config.start_from_beginning) {
+        process.exit(0);
+    }
+
     s3 = new AWS.S3();
     AWS.config.update({region: config.backup_S3_region});
 

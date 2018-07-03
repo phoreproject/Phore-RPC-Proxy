@@ -4,6 +4,7 @@
   "description": "",
   "main": "keepPhoredUpdated.js",
   "scripts": {
+    "prestart": "node prepareEnv.js",
     "start": "node keepPhoredUpdated.js"
   },
   "author": "",

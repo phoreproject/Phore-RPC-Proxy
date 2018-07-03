@@ -74,7 +74,7 @@ async function isS3InstanceAvailable(s3) {
     })
 }
 
-async function createS3Instance() {
+async function createS3Adapter() {
     s3 = new AWS.S3();
     AWS.config.update({region: config.backup_S3_region});
     await isS3InstanceAvailable(s3);
@@ -130,7 +130,7 @@ async function copyData(s3) {
 async function main() {
     try {
         console.log("Started");
-        const s3 = await createS3Instance();
+        const s3 = await createS3Adapter();
         while (true) {
             let phoredInstance = createPhoredInstance();
             await closePhoredByCLI();
