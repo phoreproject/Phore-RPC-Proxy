@@ -90,7 +90,7 @@ async function copyData(s3) {
         const s3FilePrefix = getFormattedTime();
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
             const body = tar.pack(path.join(config.phored_data_dir, directory)).pipe(zlib.Gzip());
-            const bucketDirPath = path.join(s3FilePrefix, directory);
+            const bucketDirPath = s3FilePrefix + "/" + directory;
             const params = {Bucket: config.backup_S3_dir, Key: bucketDirPath, Body: body};
             const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
             console.log("Uploading dir", directory, "to", bucketDirPath);

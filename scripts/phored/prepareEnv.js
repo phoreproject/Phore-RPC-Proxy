@@ -3,9 +3,7 @@ const config = require('./config.js'),
     tar = require('tar-fs'),
     zlib = require('zlib'),
     fs = require('fs'),
-    async = require('async'),
-    path = require('path');
-
+    async = require('async');
 
 function main() {
     if (config.start_from_beginning) {
@@ -41,8 +39,8 @@ function main() {
                         Key: objectInfo.Key
                     }).createReadStream();
 
-                    const dirName = objectInfo.Key.split("\\")[1];
-                    const dirPath = path.join(config.phored_data_dir, dirName);
+                    const dirName = objectInfo.Key.split("/")[1];
+                    const dirPath = config.phored_data_dir + "/" + dirName;
 
                     const gunzip = zlib.createGunzip();
                     gunzip.on('error', (err) => {
