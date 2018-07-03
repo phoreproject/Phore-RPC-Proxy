@@ -11,7 +11,7 @@ const config = require('./config.js'),
 
 
 const DIRECTORIES_TO_COPY = ['blocks', 'chainstate', 'sporks', 'zerocoin'];
-const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60; // 1 hour
+const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60 * 6; // 6 hours
 
 function createPhoredInstance() {
     console.log("Starting phored");
