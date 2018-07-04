@@ -5,7 +5,7 @@ WORKDIR /usr/src/app/
 COPY package*.json /usr/src/app/
 RUN npm install
 
-RUN wget -O phore.tar.gz https://github.com/phoreproject/Phore/releases/download/v1.3.0/phore-1.3.0-x86_64-linux-gnu.tar.gz
+RUN wget -O phore.tar.gz https://github.com/phoreproject/Phore/releases/download/v1.3.1/phore-1.3.1-x86_64-linux-gnu.tar.gz
 RUN mkdir phore
 RUN tar -xzf phore.tar.gz -C phore --strip-components=1
 RUN cp ./phore/bin/phored ./phored
