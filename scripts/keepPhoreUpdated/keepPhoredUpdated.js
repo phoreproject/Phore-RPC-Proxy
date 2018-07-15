@@ -7,7 +7,8 @@ const config = require('./config.js'),
     async = require('async'),
     AWS = require('aws-sdk'),
     tar = require('tar-fs'),
-    zlib = require('zlib');
+    zlib = require('zlib'),
+    express = require('express');
 
 
 const DIRECTORIES_TO_COPY = ['blocks', 'chainstate', 'sporks', 'zerocoin'];
@@ -129,6 +130,10 @@ async function copyData(s3) {
 
 async function main() {
     try {
+        let app = express();
+        app.get('*', (req, res) => res.send('Health check'));
+        app.listen(80);
+
         console.log("Started");
         const s3 = await createS3Adapter();
         while (true) {
