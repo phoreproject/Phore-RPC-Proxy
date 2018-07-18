@@ -22,4 +22,6 @@ ENV PHORED_BACKUP_DIR /data/backup_dir
 ENV RPC_USER phorerpc
 ENV RPC_PASS CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b
 
+EXPOSE 11771
+
 CMD npm start
