@@ -4,7 +4,7 @@
   "main": "blocknotify.js",
   "scripts": {
     "prestart": "node prepareEnv.js",
-    "start": "./phored -server -printtoconsole -rpcuser=phorerpc -rpcpassword=CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b -rest -blocknotify=\"node ./blocknotify.js blocknotify %s\""
+    "start": "/usr/bin/supervisord -c /usr/src/app/supervisord.conf"
   },
   "author": "",
   "license": "ISC",
@@ -15,7 +15,7 @@
     "fs": "0.0.1-security",
     "path": "^0.12.7",
     "redis": "^2.8.0",
-    "requests": "^0.2.2",
+    "request": "^2.87.0",
     "tar-fs": "^1.16.3",
     "zlib": "^1.0.5"
   },

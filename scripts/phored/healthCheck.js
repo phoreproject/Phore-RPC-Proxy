@@ -20,7 +20,7 @@ function pingPhored(response) {
         });
 }
 
-async function main() {
+function main() {
     let app = express();
     app.get('*', (req, res) => {
         try {
