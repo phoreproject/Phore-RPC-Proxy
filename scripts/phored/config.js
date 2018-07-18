@@ -9,5 +9,6 @@ module.exports = {
     rpc_user: process.env.RPC_USER != null ? process.env.RPC_USER : 'phorerpc',
     rpc_pass: process.env.RPC_PASS != null ? process.env.RPC_PASS : 'CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b',
     phored_host: process.env.PHORED_HOST != null ? process.env.PHORED_HOST : 'http://127.0.0.1',
-    phored_port: process.env.PHORED_PORT != null ? process.env.PHORED_PORT : 11771,
+    phored_con_port: process.env.PHORED_PORT != null ? process.env.PHORED_PORT : 11771,
+    phored_rpc_port: process.env.PHORED_RPC_PORT != null ? process.env.PHORED_RPC_PORT : 11772,
 };

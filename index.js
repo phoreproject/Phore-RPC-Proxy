@@ -44,7 +44,7 @@ redisIO.subClient.on('message', (channel, message) => {
         io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
 
         // gen info about block from phored
-        request.post(config.phored_host + ':' + config.phored_port, {
+        request.post(config.phored_host + ':' + config.phored_rpc_port, {
                 headers: createBasicAuthHeader(),
                 json: createJsonData(eventNames.rpc.getblock, message)
             },

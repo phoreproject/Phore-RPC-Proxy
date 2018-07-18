@@ -3,8 +3,8 @@ let config = require('./config.js'),
     request = require('request');
 
 function pingPhored(response) {
-    request.post(config.phored_host + ':' + config.phored_port, {
-            headers: { Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64") },
+    request.post(config.phored_host + ':' + config.phored_con_port, {
+            headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
             json: {"jsonrpc": "2.0", "method": "ping", "params": [], "id": 1}
         },
         (err, res, body) => {
@@ -27,7 +27,7 @@ async function main() {
             pingPhored(res);
         }
         catch (e) {
-            res.status(408).send("Timeout")
+            res.status(408).send(e)
         }
     });
     app.listen(80);
