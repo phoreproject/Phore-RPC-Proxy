@@ -6,6 +6,20 @@ Description: This stack deploys a Fargate cluster that is in a VPC with both
              send traffic to the containers in the private subnet, and one in
              the private subnet, which can be used for private internal traffic
              between internal services.
+Parameters:
+  PhoredPort:
+    Type: Number
+    Default: 11771
+    Description: What port number phored is using to connections.
+  PhoredRPCPort:
+    Type: Number
+    Default: 11772
+    Description: What port number phored is using to rpc connections.
+  ServicesHTTPPort:
+    Type: Number
+    Default: 80
+    Description: What port number services are using to connections.
+           
 Mappings:
   # Hard values for the subnet masks. These masks define
   # the range of internal IP addresses that can be assigned.
@@ -31,6 +45,7 @@ Mappings:
       CIDR: '10.0.2.0/24'
     PrivateTwo:
       CIDR: '10.0.3.0/24'
+
 Resources:
   # VPC in which containers will be networked.
   # It has two public subnets, and two private subnets.
@@ -246,6 +261,7 @@ Resources:
         - !Ref PublicSubnetOne
         - !Ref PublicSubnetTwo
       SecurityGroups: [!Ref 'PublicLoadBalancerSG']
+
   # A dummy target group is used to setup the ALB to just drop traffic
   # initially, before any real service target groups have been added.
   DummyTargetGroupPublic:
@@ -270,7 +286,18 @@ Resources:
         - TargetGroupArn: !Ref 'DummyTargetGroupPublic'
           Type: 'forward'
       LoadBalancerArn: !Ref 'PublicLoadBalancer'
-      Port: 80
+      Port: !Ref 'PhoredPort'
+      Protocol: HTTP
+  PublicLoadBalancerHTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PublicLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref 'DummyTargetGroupPublic'
+          Type: 'forward'
+      LoadBalancerArn: !Ref 'PublicLoadBalancer'
+      Port: !Ref 'ServicesHTTPPort'
       Protocol: HTTP
 
   # An internal load balancer, this would be used for a service that is not
@@ -281,6 +308,7 @@ Resources:
     Properties:
       GroupDescription: Access to the internal load balancer
       VpcId: !Ref 'VPC'
+
   PrivateLoadBalancerIngressFromECS:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -288,6 +316,7 @@ Resources:
       GroupId: !Ref 'PrivateLoadBalancerSG'
       IpProtocol: -1
       SourceSecurityGroupId: !Ref 'FargateContainerSecurityGroup'
+
   PrivateLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -301,6 +330,7 @@ Resources:
         - !Ref PrivateSubnetOne
         - !Ref PrivateSubnetTwo
       SecurityGroups: [!Ref 'PrivateLoadBalancerSG']
+
   # This dummy target group is used to setup the ALB to just drop traffic
   # initially, before any real service target groups have been added.
   DummyTargetGroupPrivate:
@@ -325,7 +355,29 @@ Resources:
         - TargetGroupArn: !Ref 'DummyTargetGroupPrivate'
           Type: 'forward'
       LoadBalancerArn: !Ref 'PrivateLoadBalancer'
-      Port: 80
+      Port: !Ref 'PhoredPort'
+      Protocol: HTTP
+  PrivateLoadBalancerRPCListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PrivateLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref 'DummyTargetGroupPrivate'
+          Type: 'forward'
+      LoadBalancerArn: !Ref 'PrivateLoadBalancer'
+      Port: !Ref 'PhoredRPCPort'
+      Protocol: HTTP
+  PrivateLoadBalancerHTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PrivateLoadBalancer
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref 'DummyTargetGroupPrivate'
+          Type: 'forward'
+      LoadBalancerArn: !Ref 'PrivateLoadBalancer'
+      Port: !Ref 'ServicesHTTPPort'
       Protocol: HTTP
 
   # This is an IAM role which authorizes ECS to manage resources on your
@@ -429,11 +481,26 @@ Outputs:
     Value: !Ref PublicLoadBalancerListener
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicListener' ] ]
+  PublicHTTPListener:
+    Description: The ARN of the public load balancer's http Listener
+    Value: !Ref PublicLoadBalancerHTTPListener
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicHTTPListener' ] ]
   PrivateListener:
-    Description: The ARN of the public load balancer's Listener
+    Description: The ARN of the private load balancer's Listener
     Value: !Ref PrivateLoadBalancerListener
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateListener' ] ]
+  PrivateRPCListener:
+    Description: The ARN of the private load balancer's rpc Listener
+    Value: !Ref PrivateLoadBalancerRPCListener
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateRPCListener' ] ]
+  PrivateHTTPListener:
+    Description: The ARN of the private load balancer'sc http Listener
+    Value: !Ref PrivateLoadBalancerHTTPListener
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateHTTPListener' ] ]
   VPCId:
     Description: The ID of the VPC that this stack is deployed in
     Value: !Ref 'VPC'
