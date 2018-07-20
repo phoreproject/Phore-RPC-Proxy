@@ -14,7 +14,7 @@ Parameters:
     Type: String
     Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/keep_phore_updated:0.8
     Description: keep_phore_updated
-  ContainerPort:
+  ContainerHTTPPort:
     Type: Number
     Default: 80
     Description: What port number the application inside the docker container is binding to
@@ -78,7 +78,7 @@ Resources:
           Memory: !Ref 'ContainerMemory'
           Image: !Ref 'ImageUrl'
           PortMappings:
-            - ContainerPort: !Ref 'ContainerPort'
+            - ContainerPort: !Ref 'ContainerHTTPPort'
           Environment:
             - Name: 'AWS_DEFAULT_REGION'
               Value : 'us-east-1'
@@ -90,7 +90,7 @@ Resources:
   # as monitor the number of running tasks and replace any that have crashed
   Service:
     Type: AWS::ECS::Service
-    DependsOn: LoadBalancerRule
+    DependsOn: LoadBalancerHTTPRule
     Properties:
       ServiceName: !Ref 'ServiceName'
       Cluster:
@@ -114,36 +114,36 @@ Resources:
       TaskDefinition: !Ref 'TaskDefinition'
       LoadBalancers:
         - ContainerName: !Ref 'ServiceName'
-          ContainerPort: !Ref 'ContainerPort'
-          TargetGroupArn: !Ref 'TargetGroup'
+          ContainerPort: !Ref 'ContainerHTTPPort'
+          TargetGroupArn: !Ref 'TargetHTTPGroup'
 
   # A target group. This is used for keeping track of all the tasks, and
   # what IP addresses / port numbers they have. You can query it yourself,
   # to use the addresses yourself, but most often this target group is just
   # connected to an application load balancer, or network load balancer, so
   # it can automatically distribute traffic across all the targets.
-  TargetGroup:
+  TargetHTTPGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       TargetType: ip
-      Name: !Ref 'ServiceName'
-      Port: !Ref 'ContainerPort'
+      Name: !Join ['-', [!Ref 'ServiceName', !Ref 'ContainerHTTPPort']]
+      Port: !Ref 'ContainerHTTPPort'
       Protocol: HTTP
       VpcId:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'VPCId']]
 
   # Create a rule on the load balancer for routing traffic to the target group
-  LoadBalancerRule:
+  LoadBalancerHTTPRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       Actions:
-        - TargetGroupArn: !Ref 'TargetGroup'
+        - TargetGroupArn: !Ref 'TargetHTTPGroup'
           Type: 'forward'
       Conditions:
         - Field: path-pattern
           Values: [!Ref 'Path']
       ListenerArn:
         Fn::ImportValue:
-          !Join [':', [!Ref 'StackName', 'PublicListener']]
+          !Join [':', [!Ref 'StackName', 'PublicHTTPListener']]
       Priority: !Ref 'Priority'
