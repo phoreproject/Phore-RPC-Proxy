@@ -34,7 +34,7 @@ Parameters:
     Type: Number
     Default: 512
     Description: How much memory in megabytes to give the container
-  Path:
+  RPCPath:
     Type: String
     Default: "/rpc*"
     Description: A path on the public load balancer that this service
@@ -42,10 +42,16 @@ Parameters:
                  traffic to this service.
   Priority:
     Type: Number
-    Default: 10
+    Default: 512
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
+   RPCPriority:
+     Type: Number
+     Default: 511
+     Description: The priority for the routing rule added to the load balancer.
+                  This only applies if your have multiple services which have been
+                  assigned to different paths on the load balancer.
   DesiredCount:
     Type: Number
     Default: 1
@@ -88,6 +94,12 @@ Resources:
             - ContainerPort: !Ref 'ContainerPort'
             - ContainerPort: !Ref 'ContainerRPCPort'
             - ContainerPort: !Ref 'ContainerHTTPPort'
+          LogConfiguration:
+            LogDriver: 'awslogs'
+            Options:
+              awslogs-group: !Join ['/', ['rpc', !Ref 'ServiceName']]
+              awslogs-region: 'us-east-1'
+              awslogs-stream-prefix: 'rpc'
 
   # The service. The service is a resource which allows you to run multiple
   # copies of a type of task, and gather up their logs and metrics, as well
@@ -118,7 +130,7 @@ Resources:
       TaskDefinition: !Ref 'TaskDefinition'
       LoadBalancers:
         - ContainerName: !Ref 'ServiceName'
-          ContainerPort: !Ref 'ContainerPort'
+          ContainerPort: !Ref 'ContainerHTTPPort'
           TargetGroupArn: !Ref 'TargetGroup'
 
   # A target group. This is used for keeping track of all the tasks, and
@@ -129,16 +141,10 @@ Resources:
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /healthCheck
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
       TargetType: ip
-      Name: !Ref 'ServiceName'
-      Port: !Ref 'ContainerHTTPPort'
+      Name: !Join['-', [!Ref 'ServiceName', !Ref 'ContainerPort']]
+      Port: !Ref 'ContainerPort'
       Protocol: HTTP
-      UnhealthyThresholdCount: 3
       VpcId:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'VPCId']]
@@ -152,8 +158,34 @@ Resources:
           Type: 'forward'
       Conditions:
         - Field: path-pattern
-          Values: [!Ref 'Path']
+          Values: ['*']
       ListenerArn:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PublicListener']]
       Priority: !Ref 'Priority'
+
+  TargetRPCGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      TargetType: ip
+      Name: !Join['-', [!Ref 'ServiceName', !Ref 'ContainerPort']]
+      Port: !Ref 'ContainerRPCPort'
+      Protocol: HTTP
+      VpcId:
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'VPCId']]
+
+  # Create a rule on the load balancer for routing traffic to the target group
+  LoadBalancerRPCRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref 'TargetRPCGroup'
+          Type: 'forward'
+      Conditions:
+        - Field: path-pattern
+          Values: [!Ref 'RPCPath']
+      ListenerArn:
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
+      Priority: !Ref 'RPCPriority'

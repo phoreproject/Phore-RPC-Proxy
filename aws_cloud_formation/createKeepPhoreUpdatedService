@@ -24,7 +24,7 @@ Parameters:
     Description: How much CPU to give the container. 1024 is 1 CPU
   ContainerMemory:
     Type: Number
-    Default: 512
+    Default: 1024
     Description: How much memory in megabytes to give the container
   Path:
     Type: String
@@ -34,7 +34,7 @@ Parameters:
                  traffic to this service.
   Priority:
     Type: Number
-    Default: 1
+    Default: 1024
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
@@ -82,8 +82,12 @@ Resources:
           Environment:
             - Name: 'AWS_DEFAULT_REGION'
               Value : 'us-east-1'
-
-
+          LogConfiguration:
+            LogDriver: 'awslogs'
+            Options:
+              awslogs-group: !Join ['/', ['rpc', !Ref 'ServiceName']]
+              awslogs-region: 'us-east-1'
+              awslogs-stream-prefix: 'rpc'
 
   # The service. The service is a resource which allows you to run multiple
   # copies of a type of task, and gather up their logs and metrics, as well
