@@ -42,14 +42,6 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
-  Role:
-    Type: String
-    Default: "s3FullAccessEcsTaskRole"
-    Description: An IAM role to give the service's containers if the code within needs to
-                 access other AWS resources like S3 buckets, DynamoDB tables, etc
-
-Conditions:
-  HasCustomRole: !Not [ !Equals [!Ref 'Role', ''] ]
 
 Resources:
 
@@ -68,10 +60,8 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'ECSTaskExecutionRole']]
       TaskRoleArn:
-        Fn::If:
-          - 'HasCustomRole'
-          - !Ref 'Role'
-          - !Ref "AWS::NoValue"
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'ECSTaskExecutionRole']]
       ContainerDefinitions:
         - Name: !Ref 'ServiceName'
           Cpu: !Ref 'ContainerCpu'
@@ -85,7 +75,7 @@ Resources:
           LogConfiguration:
             LogDriver: 'awslogs'
             Options:
-              awslogs-group: !Join ['/', ['rpc', !Ref 'ServiceName']]
+              awslogs-group: !Join ['/', ['/rpc', !Ref 'ServiceName']]
               awslogs-region: 'us-east-1'
               awslogs-stream-prefix: 'rpc'
 

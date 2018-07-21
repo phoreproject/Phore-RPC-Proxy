@@ -12,7 +12,7 @@ Parameters:
     Description: Create phored instances available for public.
   ImageUrl:
     Type: String
-    Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/phored:0.9
+    Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/phored:0.10
     Description: phored
   ContainerPort:
     Type: Number
@@ -46,7 +46,7 @@ Parameters:
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
-   RPCPriority:
+  RPCPriority:
      Type: Number
      Default: 511
      Description: The priority for the routing rule added to the load balancer.
@@ -56,14 +56,6 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
-  Role:
-    Type: String
-    Default: "PhoreRPC-ECSTaskExecutionRole-NSSSB6LW5QQ"
-    Description: An IAM role to give the service's containers if the code within needs to
-                 access other AWS resources like S3 buckets, DynamoDB tables, etc
-
-Conditions:
-  HasCustomRole: !Not [ !Equals [!Ref 'Role', ''] ]
 
 Resources:
   # The task definition. This is a simple metadata description of what
@@ -81,10 +73,8 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'ECSTaskExecutionRole']]
       TaskRoleArn:
-        Fn::If:
-          - 'HasCustomRole'
-          - !Ref 'Role'
-          - !Ref "AWS::NoValue"
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'ECSTaskExecutionRole']]
       ContainerDefinitions:
         - Name: !Ref 'ServiceName'
           Cpu: !Ref 'ContainerCpu'
@@ -142,7 +132,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       TargetType: ip
-      Name: !Join['-', [!Ref 'ServiceName', !Ref 'ContainerPort']]
+      Name: !Join ['-', [!Ref 'StackName', !Ref 'ContainerPort']]
       Port: !Ref 'ContainerPort'
       Protocol: HTTP
       VpcId:
@@ -168,7 +158,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       TargetType: ip
-      Name: !Join['-', [!Ref 'ServiceName', !Ref 'ContainerPort']]
+      Name: !Join ['-', [!Ref 'ServiceName', !Ref 'ContainerRPCPort']]
       Port: !Ref 'ContainerRPCPort'
       Protocol: HTTP
       VpcId:
