@@ -44,6 +44,12 @@ Parameters:
     Description: How many copies of the service task to run
 
 Resources:
+  # The log driver group definition for service.
+  LogDriver:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Join ['/', ['/rpc', !Ref 'ServiceName']]
+      RetentionInDays: 30
 
   # The task definition. This is a simple metadata description of what
   # container to run, and what resource requirements it has.
