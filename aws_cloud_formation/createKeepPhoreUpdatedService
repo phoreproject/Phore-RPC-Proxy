@@ -34,7 +34,7 @@ Parameters:
                  traffic to this service.
   Priority:
     Type: Number
-    Default: 1024
+    Default: 32
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
