@@ -15,7 +15,9 @@ function main() {
     AWS.config.update({region: config.backup_S3_region});
 
     if (!fs.existsSync(config.phored_data_dir)) {
+        console.log(config.phored_data_dir, "doesn't exists");
         fs.mkdirSync(config.phored_data_dir);
+        console.log(config.phored_data_dir, "created");
     }
 
     s3.getObject({Bucket: config.backup_S3_dir, Key: config.backup_config_S3_file}, (err, s3Prefix) => {
