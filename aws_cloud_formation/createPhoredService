@@ -97,6 +97,9 @@ Resources:
             - ContainerPort: !Ref 'ContainerPort'
             - ContainerPort: !Ref 'ContainerRPCPort'
             - ContainerPort: !Ref 'ContainerHTTPPort'
+          Environment:
+            - Name: 'AWS_DEFAULT_REGION'
+              Value : 'us-east-1'
           LogConfiguration:
             LogDriver: 'awslogs'
             Options:
