@@ -36,7 +36,7 @@ Parameters:
     Description: How much memory in megabytes to give the container
   Path:
     Type: String
-    Default: "/rpc*"
+    Default: "/rpc"
     Description: A path on the public load balancer that this service
                  should be connected to. Use * to send all load balancer
                  traffic to this service.
@@ -176,6 +176,12 @@ Resources:
   TargetHTTPGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      HealthCheckIntervalSeconds: 6
+      HealthCheckPath: !Join ['/', [!Ref 'Path', 'ping']]
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
       TargetType: ip
       Name: !Join ['-', [!Ref 'StackName', !Ref 'ContainerHTTPPort']]
       Port: !Ref 'ContainerHTTPPort'
@@ -193,7 +199,7 @@ Resources:
           Type: 'forward'
       Conditions:
         - Field: path-pattern
-          Values: [!Ref 'Path']
+          Values: [!Join ['', [!Ref 'Path', '*']]]
       ListenerArn:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PublicHTTPListener']]
@@ -219,7 +225,7 @@ Resources:
           Type: 'forward'
       Conditions:
         - Field: path-pattern
-          Values: [!Ref 'Path']
+          Values: [!Join ['', [!Ref 'Path', '*']]]
       ListenerArn:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
