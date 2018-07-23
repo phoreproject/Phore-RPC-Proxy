@@ -75,6 +75,8 @@ Resources:
   # container to run, and what resource requirements it has.
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - RedisCluster
     Properties:
       Family: !Ref 'ServiceName'
       Cpu: !Ref 'ContainerCpu'
@@ -100,6 +102,10 @@ Resources:
           Environment:
             - Name: 'AWS_DEFAULT_REGION'
               Value : 'us-east-1'
+            - Name: 'REDIS_HOST'
+              Value: !GetAtt RedisCluster.RedisEndpoint.Address
+            - Name: 'REDIS_PORT'
+              Value: !GetAtt RedisCluster.RedisEndpoint.Port
           LogConfiguration:
             LogDriver: 'awslogs'
             Options:
