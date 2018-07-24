@@ -237,15 +237,14 @@ Resources:
           !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
       Priority: !Ref 'RPCPriority'
 
-
   RedisClusterSubnetGroup:
     Type: "AWS::ElastiCache::SubnetGroup"
     Properties:
       CacheSubnetGroupName: 'RedisClusterForRPCSubnetGroup'
       Description: 'Subnet group created for RPC Redis cluster.'
       SubnetIds:
-        - !Join [':', [!Ref 'StackName', 'PrivateSubnetOne']]
-        - !Join [':', [!Ref 'StackName', 'PrivateSubnetTwo']]
+        - Fn::ImportValue: !Join [':', [!Ref 'StackName', 'PrivateSubnetOne']]
+        - Fn::ImportValue: !Join [':', [!Ref 'StackName', 'PrivateSubnetTwo']]
 
   # Create elasticache cluster using Redis
   RedisCluster:
@@ -255,7 +254,8 @@ Resources:
       EngineVersion: '4.0.10'
       Port: 6379
       CacheNodeType: 'cache.t2.medium'
-      NumCacheNodes: 2
-      CacheSubnetGroupName: !Ref RedisClusterSubnetGroup
+      NumCacheNodes: 1
+      CacheSubnetGroupName: !Ref 'RedisClusterSubnetGroup'
       VpcSecurityGroupIds:
-        - !Join [':', [!Ref 'StackName', 'FargateContainerSecurityGroup']]
+        - Fn::ImportValue:
+            !Join [':', [!Ref 'StackName', 'FargateContainerSecurityGroup']]
