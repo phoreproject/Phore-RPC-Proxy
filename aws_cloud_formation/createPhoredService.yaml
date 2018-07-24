@@ -89,7 +89,7 @@ Resources:
           !Join [':', [!Ref 'StackName', 'ECSTaskExecutionRole']]
       TaskRoleArn:
         Fn::ImportValue:
-          !Join [':', [!Ref 'StackName', 'ECSTaskExecutionRole']]
+          !Join [':', [!Ref 'StackName', 'ECSTaskS3AccessRole']]
       ContainerDefinitions:
         - Name: !Ref 'ServiceName'
           Cpu: !Ref 'ContainerCpu'
@@ -101,7 +101,7 @@ Resources:
             - ContainerPort: !Ref 'ContainerHTTPPort'
           Environment:
             - Name: 'AWS_DEFAULT_REGION'
-              Value : 'us-east-1'
+              Value : !Ref 'AWS::Region'
             - Name: 'REDIS_HOST'
               Value: !GetAtt RedisCluster.RedisEndpoint.Address
             - Name: 'REDIS_PORT'
@@ -110,7 +110,7 @@ Resources:
             LogDriver: 'awslogs'
             Options:
               awslogs-group: !Join ['/', ['/rpc', !Ref 'ServiceName']]
-              awslogs-region: 'us-east-1'
+              awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: 'rpc'
 
   # The service. The service is a resource which allows you to run multiple
