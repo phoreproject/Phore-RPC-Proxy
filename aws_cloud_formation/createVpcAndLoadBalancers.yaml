@@ -460,8 +460,6 @@ Resources:
             - 'ecs-tasks.amazonaws.com'
           Action:
           - 'sts:AssumeRole'
-          Resource:
-          - 'arn:aws:s3:::*'
       ManagedPolicyArns:
       - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
       - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
