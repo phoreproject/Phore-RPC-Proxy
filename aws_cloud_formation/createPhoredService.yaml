@@ -25,7 +25,7 @@ Parameters:
   ContainerRPCPort:
     Type: Number
     Default: 11772
-    Description: What port number phored is using for for RPC connections.
+    Description: What port number phored is using for RPC connections.
   ContainerCpu:
     Type: Number
     Default: 512
@@ -38,8 +38,7 @@ Parameters:
     Type: String
     Default: "/rpc"
     Description: A path on the public load balancer that this service
-                 should be connected to. Use * to send all load balancer
-                 traffic to this service.
+                 should be connected to.
   Priority:
     Type: Number
     Default: 16
@@ -75,8 +74,6 @@ Resources:
   # container to run, and what resource requirements it has.
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
-    DependsOn:
-      - RedisCluster
     Properties:
       Family: !Ref 'ServiceName'
       Cpu: !Ref 'ContainerCpu'
@@ -103,9 +100,13 @@ Resources:
             - Name: 'AWS_DEFAULT_REGION'
               Value : !Ref 'AWS::Region'
             - Name: 'REDIS_HOST'
-              Value: !GetAtt RedisCluster.RedisEndpoint.Address
+              Value:
+              - Fn::ImportValue:
+                  !Join [':', [!Ref 'StackName', 'RedisClusterHost']]
             - Name: 'REDIS_PORT'
-              Value: !GetAtt RedisCluster.RedisEndpoint.Port
+              Value:
+              - Fn::ImportValue:
+                  !Join [':', [!Ref 'StackName', 'RedisClusterPort']]
           LogConfiguration:
             LogDriver: 'awslogs'
             Options:
@@ -236,26 +237,3 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
       Priority: !Ref 'RPCPriority'
-
-  RedisClusterSubnetGroup:
-    Type: "AWS::ElastiCache::SubnetGroup"
-    Properties:
-      CacheSubnetGroupName: 'RedisClusterForRPCSubnetGroup'
-      Description: 'Subnet group created for RPC Redis cluster.'
-      SubnetIds:
-        - Fn::ImportValue: !Join [':', [!Ref 'StackName', 'PrivateSubnetOne']]
-        - Fn::ImportValue: !Join [':', [!Ref 'StackName', 'PrivateSubnetTwo']]
-
-  # Create elasticache cluster using Redis
-  RedisCluster:
-    Type: "AWS::ElastiCache::CacheCluster"
-    Properties:
-      Engine: 'redis'
-      EngineVersion: '4.0.10'
-      Port: 6379
-      CacheNodeType: 'cache.t2.medium'
-      NumCacheNodes: 1
-      CacheSubnetGroupName: !Ref 'RedisClusterSubnetGroup'
-      VpcSecurityGroupIds:
-        - Fn::ImportValue:
-            !Join [':', [!Ref 'StackName', 'FargateContainerSecurityGroup']]
