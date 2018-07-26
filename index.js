@@ -49,10 +49,15 @@ redisIO.subClient.on('message', (channel, message) => {
                 json: createJsonData(eventNames.rpc.getblock, message)
             },
             (err, res, body) => {
-                if (err || res.statusCode !== 200) {
+                if (err) {
                     return console.log(err);
                 }
+                else if (res && res.statusCode !== 200) {
+                    return console.log("Failed download", eventNames.rpc.getblock, "with params:", message || "empty",
+                        "because", body.error.message)
+                }
 
+                console.log("Success download", eventNames.rpc.getblock, "with params:", message || "empty");
                 io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, body.result);
             });
     }

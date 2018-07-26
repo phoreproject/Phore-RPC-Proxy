@@ -8,15 +8,13 @@ function sendRPCCommand(response, method, params=[]) {
             json: {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
         },
         (err, res, body) => {
-            if (err || res.statusCode !== 200) {
-                if (res) {
-                    response.status(res.statusCode).send(err);
-                }
-                else {
-                    response.status(400).send(err);
-                }
+            if (err) {
+                response.status(400);
             }
-            response.send("Success");
+            else if(res && res.statusCode !== 200) {
+                response.status(res.statusCode);
+            }
+            response.send(body);
         });
 }
 
@@ -56,9 +54,12 @@ class MethodNotAllowedError extends Error {
 function main() {
     let app = express();
     app.use(express.json());
+
+    // error handler
     app.use((err, req, res, next) => {
         console.log(err);
-        res.sendStatus(err.statusCode).json(err)
+        res.sendStatus(err.statusCode).json(err);
+        next();
     });
 
     app.post('/rpc', (req, res, next) => {
@@ -66,16 +67,17 @@ function main() {
         if (method === undefined) {
             let error = new Error("Method parameter is missing from body");
             error.statusCode = 400;
-            return next(error);
+            return next(error, req, res);
         }
 
-        if (!AllowedMethods.has(method)) {
+        if (!AllowedMethods.has(method.toLowerCase())) {
             let error = new MethodNotAllowedError("Forbidden to run command " + method);
             error.statusCode = 403;
             return next(error);
         }
 
         try {
+            console.log("Sending", method, "with params:", req.body.params || "empty");
             sendRPCCommand(res, method, req.body.params || []);
         }
         catch (e) {
@@ -92,8 +94,10 @@ function main() {
             res.status(408).send(e)
         }
     });
-    app.listen(config.web_port);
-    console.log("App is running state");
+    app.listen(config.web_port, () => {
+        console.log("App is running on port", config.web_port);
+    });
+
 }
 
 main();
