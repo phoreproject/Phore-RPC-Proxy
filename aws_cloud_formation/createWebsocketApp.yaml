@@ -86,11 +86,11 @@ Resources:
           Environment:
             - Name: 'REDIS_HOST'
               Value:
-              - Fn::ImportValue:
+                Fn::ImportValue:
                   !Join [':', [!Ref 'StackName', 'RedisClusterHost']]
             - Name: 'REDIS_PORT'
               Value:
-              - Fn::ImportValue:
+                Fn::ImportValue:
                   !Join [':', [!Ref 'StackName', 'RedisClusterPort']]
             - Name: 'PHORED_HOST'
               Value:
