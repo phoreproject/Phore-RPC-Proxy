@@ -21,17 +21,31 @@ client.on('error', function (err) {
     process.exit(2);
 });
 
-client.publish(process.argv[2], process.argv[3], (err, reply) => {
+client.send_command("SETNX", [process.argv[3], 1], (err, reply) => {
     if (err !== null) {
-        console.log('Set error:', err);
+        console.log('Setxn error:', err);
         client.quit();
         process.exit(3);
     }
 
-    console.log('Successfully publish', process.argv[2], '=', process.argv[3]);
-    client.quit();
-    process.exit(0);
+    if (reply === 0) {
+        console.log(process.argv[3], 'already published by another node');
+        process.exit(0);
+    }
+
+    client.publish(process.argv[2], process.argv[3], (err, reply) => {
+        if (err !== null) {
+            console.log('Set error:', err);
+            client.quit();
+            process.exit(3);
+        }
+
+        console.log('Successfully publish', process.argv[2], '=', process.argv[3]);
+        client.quit();
+        process.exit(0);
+    });
 });
+
 
 // no redis response after 60 sec, then stop process
 setTimeout(() => {
