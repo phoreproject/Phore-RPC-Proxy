@@ -153,7 +153,7 @@ Resources:
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
       TargetType: ip
-      Name: !Join ['-', [!Ref 'StackName', !Ref 'ContainerHTTPPort']]
+      Name: !Join ['-', [!Ref 'AWS::StackName', !Ref 'ContainerHTTPPort']]
       Port: !Ref 'ContainerHTTPPort'
       Protocol: HTTP
       VpcId:
