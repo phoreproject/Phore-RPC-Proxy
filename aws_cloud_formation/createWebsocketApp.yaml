@@ -12,7 +12,7 @@ Parameters:
     Description: Create phored instances available for public.
   ImageUrl:
     Type: String
-    Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/web_service:0.1
+    Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/web_service:latest
     Description: web socket application
   ContainerHTTPPort:
     Type: Number

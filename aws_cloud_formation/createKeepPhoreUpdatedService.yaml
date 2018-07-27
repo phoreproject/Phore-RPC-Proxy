@@ -12,7 +12,7 @@ Parameters:
     Description: Keep block database updated on S3 storage
   ImageUrl:
     Type: String
-    Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/keep_phore_updated:0.8
+    Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/keep_phore_updated:latest
     Description: keep_phore_updated
   ContainerHTTPPort:
     Type: Number
