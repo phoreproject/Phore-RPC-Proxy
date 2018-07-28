@@ -20,20 +20,51 @@ redisIO.subClient.subscribe(eventNames.redis.blocknotify);
 io.adapter(redisIO);
 
 
-let createJsonData = function (method) {
+function createJsonData(method) {
     let args = [];
     for (let i = 1; i < arguments.length; i++) {
         console.log(arguments[i]);
         args.push(arguments[i]);
     }
     return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
-};
+}
 
-let createBasicAuthHeader = function () {
+function createBasicAuthHeader() {
     return {
         Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
     }
-};
+}
+
+function createCanalNameWithParams(eventName, ...args) {
+    let s = eventName;
+    for (let i = 0; i < args.length; i++) {
+        s += ":";
+        s += args[i];
+    }
+    return s;
+}
+
+function processBlockNotifyEvent(message) {
+    io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
+
+    // gen info about block from phored
+    request.post(config.phored_host + ':' + config.phored_rpc_port, {
+            headers: createBasicAuthHeader(),
+            json: createJsonData(eventNames.rpc.getblock, message)
+        },
+        (err, res, body) => {
+            if (err) {
+                return console.log(err);
+            }
+            else if (res && res.statusCode !== 200) {
+                return console.log("Failed download", eventNames.rpc.getblock, "with params:", message || "empty",
+                    "because", body.error.message)
+            }
+
+            console.log("Success download", eventNames.rpc.getblock, "with params:", message || "empty");
+            io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, body.result);
+        });
+}
 
 // new block appeared
 redisIO.subClient.on('message', (channel, message) => {
@@ -41,25 +72,7 @@ redisIO.subClient.on('message', (channel, message) => {
     console.log(channel, message);
     if (channel === eventNames.redis.blocknotify) {
         // send new block to all subscribed clients
-        io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
-
-        // gen info about block from phored
-        request.post(config.phored_host + ':' + config.phored_rpc_port, {
-                headers: createBasicAuthHeader(),
-                json: createJsonData(eventNames.rpc.getblock, message)
-            },
-            (err, res, body) => {
-                if (err) {
-                    return console.log(err);
-                }
-                else if (res && res.statusCode !== 200) {
-                    return console.log("Failed download", eventNames.rpc.getblock, "with params:", message || "empty",
-                        "because", body.error.message)
-                }
-
-                console.log("Success download", eventNames.rpc.getblock, "with params:", message || "empty");
-                io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, body.result);
-            });
+        processBlockNotifyEvent(message);
     }
 });
 
@@ -76,6 +89,49 @@ io.on('connect', (socket) => {
         console.log("Client", socket.id, "subscribe to new blocks notification");
         socket.join(eventNames.canals.subscribeBlockRoom);
         fn("Success!");
+    });
+
+    socket.on(eventNames.subscriptions.subscribeAddress, (...args) => {
+        console.log("Client", socket.id, "subscribe to new address notification");
+
+        // callback which is always last parameter
+        let callback = args[args.length - 1];
+        let address = null;
+        let includeMempool = null;
+
+        if (args.length === 2) {
+            let arr = args[0];
+            if (!Array.isArray(arr)) {
+                return callback("Too few parameters or first parameter must be an array");
+            }
+
+            if (arr.length !== 2) {
+                return callback("Array size must be exactly 2, but is " + arr.length);
+            }
+
+            address = arr[0];
+            includeMempool = arr[1];
+        }
+        else if (args.length === 3) {
+            address = args[0];
+            includeMempool = args[1];
+        }
+        else {
+            return callback("Function have incorrect number of parameters: " + args.length - 1);
+        }
+
+        if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
+            callback("includeMempool has unsupported value: " + includeMempool +
+                     ", correct values are: " + eventNames.includeTransactionType.keys());
+        }
+
+        if (typeof address !== "string") {
+            return callback("Address must be a string");
+        }
+
+        socket.join(createCanalNameWithParams(eventNames.canals.subscribeAddressRoom, address, includeMempool));
+
+        return callback("Success!");
     });
 
     socket.on(eventNames.subscriptions.unsubscribeAll, () => {

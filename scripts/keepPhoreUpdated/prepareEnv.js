@@ -11,7 +11,7 @@ function main() {
         process.exit(0);
     }
 
-    s3 = new AWS.S3();
+    let s3 = new AWS.S3();
     AWS.config.update({region: config.backup_S3_region});
 
     if (!fs.existsSync(config.phored_data_dir)) {

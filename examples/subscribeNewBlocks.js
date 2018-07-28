@@ -14,7 +14,11 @@ socket.on('connect', function (connection) {
 
     socket.emit(eventNames.subscriptions.subscribeBlock, (response) => {
         console.log(response);
-    })
+    });
+
+    socket.emit(eventNames.subscriptions.subscribeAddress, "address", "0", (response) => {
+        console.log(response);
+    });
 });
 
 socket.on(eventNames.subscriptions.subscribeBlockHash, (message) => {
