@@ -16,7 +16,7 @@ socket.on('connect', function (connection) {
         console.log(response);
     });
 
-    socket.emit(eventNames.subscriptions.subscribeAddress, "address", "0", (response) => {
+    socket.emit(eventNames.subscriptions.subscribeAddress, "YOUR_ADDRESS_HERE", eventNames.includeTransactionType.include_all, (response) => {
         console.log(response);
     });
 });
