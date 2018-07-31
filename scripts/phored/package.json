@@ -1,7 +1,7 @@
 {
   "name": "phored",
   "version": "1.0.0",
-  "main": "blocknotify.js",
+  "main": "notify.js",
   "scripts": {
     "prestart": "node prepareEnv.js",
     "start": "/usr/bin/supervisord -c /usr/src/app/supervisord.conf"
