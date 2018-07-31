@@ -23,7 +23,6 @@ io.adapter(redisIO);
 function createJsonData(method) {
     let args = [];
     for (let i = 1; i < arguments.length; i++) {
-        console.log(arguments[i]);
         args.push(arguments[i]);
     }
     return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
@@ -69,7 +68,6 @@ function processBlockNotifyEvent(message) {
 // new block appeared
 redisIO.subClient.on('message', (channel, message) => {
     // write to all subscribed clients
-    console.log(channel, message);
     if (channel === eventNames.redis.blocknotify) {
         // send new block to all subscribed clients
         processBlockNotifyEvent(message);
