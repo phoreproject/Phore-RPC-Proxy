@@ -481,7 +481,7 @@ Resources:
       Engine: 'redis'
       EngineVersion: '4.0.10'
       Port: 6379
-      CacheNodeType: 'cache.t2.medium'
+      CacheNodeType: 'cache.t2.small'
       NumCacheNodes: 1
       CacheSubnetGroupName: !Ref 'RedisClusterSubnetGroup'
       VpcSecurityGroupIds:

@@ -4,7 +4,7 @@ const express = require('express'),
     socketioRedis = require('socket.io-redis'),
     redis = require('redis'),
     eventNames = require('./eventNames.js'),
-    request = require('request');
+    subscribeClass = require('./subscriber');
 
 let app = express();
 let server = app.listen(config.web_port);
@@ -17,60 +17,24 @@ let redisIO = socketioRedis({
     pubClient: redis.createClient(config.redis_port, config.redis_host)
 });
 redisIO.subClient.subscribe(eventNames.redis.blocknotify);
+redisIO.subClient.subscribe(eventNames.redis.mempoolnotify);
 io.adapter(redisIO);
 
-
-function createJsonData(method) {
-    let args = [];
-    for (let i = 1; i < arguments.length; i++) {
-        args.push(arguments[i]);
-    }
-    return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
-}
-
-function createBasicAuthHeader() {
-    return {
-        Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
-    }
-}
-
-function createCanalNameWithParams(eventName, ...args) {
-    let s = eventName;
-    for (let i = 0; i < args.length; i++) {
-        s += ":";
-        s += args[i];
-    }
-    return s;
-}
-
-function processBlockNotifyEvent(message) {
-    io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
-
-    // gen info about block from phored
-    request.post(config.phored_host + ':' + config.phored_rpc_port, {
-            headers: createBasicAuthHeader(),
-            json: createJsonData(eventNames.rpc.getblock, message)
-        },
-        (err, res, body) => {
-            if (err) {
-                return console.log(err);
-            }
-            else if (res && res.statusCode !== 200) {
-                return console.log("Failed download", eventNames.rpc.getblock, "with params:", message || "empty",
-                    "because", body.error.message)
-            }
-
-            console.log("Success download", eventNames.rpc.getblock, "with params:", message || "empty");
-            io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, body.result);
-        });
-}
+let subscriber = new subscribeClass.Subscriber();
 
 // new block appeared
-redisIO.subClient.on('message', (channel, message) => {
+redisIO.subClient.on('message', async (channel, message) => {
     // write to all subscribed clients
     if (channel === eventNames.redis.blocknotify) {
         // send new block to all subscribed clients
-        processBlockNotifyEvent(message);
+        io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
+        const block = await subscriber.processBlockNotifyEvent(message);
+        if (block !== undefined) {
+            io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, block);
+        }
+    }
+    else if (channel === eventNames.redis.mempoolnotify) {
+        let message = await subscriber.processMemPoolEvent(message);
     }
 });
 
@@ -93,7 +57,7 @@ io.on('connect', (socket) => {
         console.log("Client", socket.id, "subscribe to new address notification");
 
         // callback which is always last parameter
-        let callback = args[args.length - 1];
+        const callback = args[args.length - 1];
         let address = null;
         let includeMempool = null;
 
@@ -119,29 +83,61 @@ io.on('connect', (socket) => {
         }
 
         if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
-            callback("includeMempool has unsupported value: " + includeMempool +
-                     ", correct values are: " + eventNames.includeTransactionType.keys());
+            return callback("includeMempool has unsupported value: " + includeMempool +
+                ", correct values are: " + eventNames.includeTransactionType.keys());
         }
 
         if (typeof address !== "string") {
             return callback("Address must be a string");
         }
 
-        socket.join(createCanalNameWithParams(eventNames.canals.subscribeAddressRoom, address, includeMempool));
-
+        subscriber.subscribeAddress(socket, address, includeMempool);
         return callback("Success!");
     });
 
+    socket.on(eventNames.subscriptions.subscribeBloom, (...args) => {
+        console.log("Client", socket.id, "subscribe bloom filter");
+
+        // callback which is always last parameter
+        const callback = args[args.length - 1];
+        let filterHex = null;
+        let hashFunc = null;
+        let tweak = null;
+        let includeMempool = null;
+        let flags = null;
+
+        if (args.length === 5 || args.length === 6) {
+            filterHex = args[1];
+            hashFunc = args[2];
+            tweak = args[3];
+            includeMempool = args[4];
+
+            if (args.length === 6) {
+                flags = args[5];
+            }
+        }
+
+        if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
+            return callback("includeMempool has unsupported value: " + includeMempool +
+                ", correct values are: " + eventNames.includeTransactionType.keys());
+        }
+
+        subscriber.subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags);
+
+        return callback("Success");
+    });
+
     socket.on(eventNames.subscriptions.unsubscribeAll, () => {
-        for (let subscriptionName in Object.keys(eventNames.subscriptions)) {
+        for (const subscriptionName in Object.keys(eventNames.subscriptions)) {
             if (eventNames.subscriptions.hasOwnProperty(subscriptionName)) {
                 socket.leave(subscriptionName);
             }
         }
+        subscriber.unsubscribeAll(socket);
     });
 
     socket.on('disconnect', () => {
         console.log("Client", socket.id, "disconnected");
-        //client disconnected
+        subscriber.unsubscribeAll(socket);
     });
 });
