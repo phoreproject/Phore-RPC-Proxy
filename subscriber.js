@@ -17,9 +17,22 @@ function createBasicAuthHeader() {
     }
 }
 
+class BloomFilter {
+    constructor(filterHex, hashFunc, tweak, flags){
+        this.filterHex = filterHex;
+        this.hashFunc = hashFunc;
+        this.tweak = tweak;
+        this.flags = flags;
+    }
+}
+
 class Subscriber {
     constructor() {
-
+        this.clientIds = {};
+        this.subscribedToAddressMempool = {};
+        this.subscribedToAddress = {};
+        this.subscribedToBloomMempool = {};
+        this.subscribedToBloom = {};
     }
 
     async processBlockNotifyEvent(message) {
@@ -49,16 +62,58 @@ class Subscriber {
 
     }
 
-    unsubscribeAll(socket) {
+    static appendToDict(dict, key, value) {
+        if (key in dict) {
+            dict[key].append(value);
+        }
+        else {
+            dict[key] = [value];
+        }
+    }
 
+    static removeIfExists(dict, element) {
+        for(let key in dict) {
+            if (dict.hasOwnProperty(key)){
+                const index = dict[key].indexOf(element);
+                if (index !== -1) {
+                    dict[key].splice(index, 1);
+                }
+                if (dict[key].length() === 0) {
+                    delete dict[key];
+                }
+            }
+        }
+    }
+
+    unsubscribeAll(socket) {
+        delete this.clientIds[socket.id];
+        Subscriber.removeIfExists(this.subscribedToAddressMempool, socket.id);
+        Subscriber.removeIfExists(this.subscribedToAddress, socket.id);
     }
 
     subscribeAddress(socket, address, includeMempool) {
+        this.clientIds[socket.id] = socket;
 
+        if (includeMempool === eventNames.includeTransactionType.include_all) {
+            Subscriber.appendToDict(this.subscribedToAddressMempool, address, socket.id);
+            Subscriber.appendToDict(this.subscribedToAddress, address, socket.id);
+        } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
+            Subscriber.appendToDict(this.subscribedToAddress, address, socket.id);
+        } else {
+            Subscriber.appendToDict(this.subscribedToAddressMempool, address, socket.id);
+        }
     }
 
     subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags) {
-
+        const bloomFilter = new BloomFilter(filterHex, hashFunc, tweak, flags);
+        if (includeMempool === eventNames.includeTransactionType.include_all) {
+            Subscriber.appendToDict(this.subscribedToBloomMempool, bloomFilter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloom, bloomFilter, socket.id);
+        } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
+            Subscriber.appendToDict(this.subscribedToBloom, bloomFilter, socket.id);
+        } else {
+            Subscriber.appendToDict(this.subscribedToBloomMempool, bloomFilter, socket.id);
+        }
     }
 }
 
