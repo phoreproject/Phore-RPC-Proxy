@@ -29,7 +29,7 @@ redisIO.subClient.on('message', async (channel, message) => {
         // send new block to all subscribed clients
         io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
         const block = await subscriber.processBlockNotifyEvent(message);
-        if (block !== undefined) {
+        if (block != null) {
             io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, block);
         }
     }
@@ -100,21 +100,24 @@ io.on('connect', (socket) => {
 
         // callback which is always last parameter
         const callback = args[args.length - 1];
-        let filterHex = null;
-        let hashFunc = null;
-        let tweak = null;
-        let includeMempool = null;
-        let flags = null;
+        let flags = eventNames.bloomUpdateType.None;
 
-        if (args.length === 5 || args.length === 6) {
-            filterHex = args[1];
-            hashFunc = args[2];
-            tweak = args[3];
-            includeMempool = args[4];
+        if (args.length < 4 || args.length > 5) {
+            return callback("Incorrect number of arguments");
+        }
 
-            if (args.length === 6) {
-                flags = args[5];
-            }
+        let filterHex = args[1];
+        let hashFunc = args[2];
+        let tweak = args[3];
+        let includeMempool = args[4];
+
+        if (args.length === 6) {
+            flags = args[5];
+        }
+
+        if (!(flags in Object.values(eventNames.bloomUpdateType))) {
+            return callback("includeMempool has unsupported value: " + includeMempool +
+                ", correct values are: " + eventNames.bloomUpdateType.keys());
         }
 
         if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {

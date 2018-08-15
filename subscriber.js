@@ -105,6 +105,7 @@ class Subscriber {
     }
 
     subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags) {
+        this.clientIds[socket.id] = socket;
         const bloomFilter = new BloomFilter(filterHex, hashFunc, tweak, flags);
         if (includeMempool === eventNames.includeTransactionType.include_all) {
             Subscriber.appendToDict(this.subscribedToBloomMempool, bloomFilter, socket.id);
