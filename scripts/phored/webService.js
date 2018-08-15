@@ -2,7 +2,7 @@ let config = require('./config.js'),
     express = require('express'),
     request = require('request');
 
-function sendRPCCommand(response, method, params=[]) {
+function sendRPCCommand(response, method, params) {
     request.post(config.phored_host + ':' + config.phored_rpc_port, {
             headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
             json: {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
@@ -78,7 +78,11 @@ function main() {
 
         try {
             console.log("Sending", method, "with params:", req.body.params || "empty");
-            sendRPCCommand(res, method, req.body.params || []);
+            let params = req.body.params;
+            if (params === undefined) {
+                params = [];
+            }
+            sendRPCCommand(res, method, params);
         }
         catch (e) {
             res.status(500).send(e);
@@ -88,7 +92,7 @@ function main() {
     app.all('*', (req, res) => {
         console.log("Health check");
         try {
-            sendRPCCommand(res, "ping");
+            sendRPCCommand(res, "ping", []);
         }
         catch (e) {
             res.status(408).send(e)

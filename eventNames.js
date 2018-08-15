@@ -13,6 +13,7 @@ module.exports = {
     },
     rpc: {
         getblock: "getblock",
+        getrawtransaction: "getrawtransaction",
     },
     redis: {
         blocknotify: 'blocknotify',

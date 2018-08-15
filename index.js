@@ -34,7 +34,7 @@ redisIO.subClient.on('message', async (channel, message) => {
         }
     }
     else if (channel === eventNames.redis.mempoolnotify) {
-        let message = await subscriber.processMemPoolEvent(message);
+        subscriber.processMemPoolEvent(message);
     }
 });
 
