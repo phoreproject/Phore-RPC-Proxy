@@ -28,3 +28,7 @@ socket.on(eventNames.subscriptions.subscribeBlockHash, (message) => {
 socket.on(eventNames.subscriptions.subscribeBlock, (message) => {
     console.log("new block discovered", message);
 });
+
+socket.on(eventNames.subscriptions.subscribeAddress, (message) => {
+    console.log("new block discovered", message);
+});
