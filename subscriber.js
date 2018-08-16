@@ -1,6 +1,7 @@
 const request = require('request'),
     config = require('./config.js'),
-    eventNames = require('./eventNames.js');
+    eventNames = require('./eventNames.js'),
+    bloomFilter = require('bloom-filter');
 
 
 function createJsonData(method) {
@@ -28,19 +29,9 @@ function downloadBlock(blockHash, callback) {
     return sendRpcCall(eventNames.rpc.getblock, callback, blockHash);
 }
 
-function downloadRawTransaction(txHash, callback) {
+function downloadRawTransactionVerbose(txHash, callback) {
     // set verbose to true (last parameter = 1)
     return sendRpcCall(eventNames.rpc.getrawtransaction, callback, txHash, 1);
-}
-
-
-class BloomFilter {
-    constructor(filterHex, hashFunc, tweak, flags) {
-        this.filterHex = filterHex;
-        this.hashFunc = hashFunc;
-        this.tweak = tweak;
-        this.flags = flags;
-    }
 }
 
 class Subscriber {
@@ -117,14 +108,14 @@ class Subscriber {
     processTxs(txs) {
         for (let i = 0; i < txs.length; i++) {
             // get raw transactions from phored
-            downloadRawTransaction(txs[i], (err, res, body) => {
+            downloadRawTransactionVerbose(txs[i], (err, res, body) => {
                 this.parseRawTransactionForAddress(err, res, body, false);
             });
         }
     }
 
     processMempoolTx(tx) {
-        downloadRawTransaction(tx, (err, res, body) => {
+        downloadRawTransactionVerbose(tx, (err, res, body) => {
             this.parseRawTransactionForAddress(err, res, body, true);
         });
     }
@@ -190,6 +181,8 @@ class Subscriber {
         delete this.clientIds[socket.id];
         Subscriber.removeIfExists(this.subscribedToAddressMempool, socket.id);
         Subscriber.removeIfExists(this.subscribedToAddress, socket.id);
+        Subscriber.removeIfExists(this.subscribedToBloom, socket.id);
+        Subscriber.removeIfExists(this.subscribedToBloomMempool, socket.id);
     }
 
     subscribeAddress(socket, address, includeMempool) {
@@ -207,14 +200,19 @@ class Subscriber {
 
     subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags) {
         this.clientIds[socket.id] = socket;
-        const bloomFilter = new BloomFilter(filterHex, hashFunc, tweak, flags);
+        const filter = new bloomFilter({
+            Filter: filterHex,
+            HashFuncs: hashFunc,
+            Tweak: tweak,
+            Flags: flags,
+        });
         if (includeMempool === eventNames.includeTransactionType.include_all) {
-            Subscriber.appendToDict(this.subscribedToBloomMempool, bloomFilter, socket.id);
-            Subscriber.appendToDict(this.subscribedToBloom, bloomFilter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloomMempool, filter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloom, filter, socket.id);
         } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
-            Subscriber.appendToDict(this.subscribedToBloom, bloomFilter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloom, filter, socket.id);
         } else {
-            Subscriber.appendToDict(this.subscribedToBloomMempool, bloomFilter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloomMempool, filter, socket.id);
         }
     }
 }
