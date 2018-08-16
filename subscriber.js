@@ -73,12 +73,12 @@ class Subscriber {
 
     }
 
-    parseRawTransactionForAddress(err, res, body, mempool){
+    parseRawTransactionForAddress(txHash, err, res, body, mempool){
         if(err){
             console.log(err);
         }
         else if (res && res.statusCode !== 200) {
-            return console.log("Failed download", eventNames.rpc.getrawtransaction, "with params:", tx,
+            return console.log("Failed download", eventNames.rpc.getrawtransaction, "with params:", txHash,
                 "because", body.error.message);
         }
 
@@ -109,14 +109,14 @@ class Subscriber {
         for (let i = 0; i < txs.length; i++) {
             // get raw transactions from phored
             downloadRawTransactionVerbose(txs[i], (err, res, body) => {
-                this.parseRawTransactionForAddress(err, res, body, false);
+                this.parseRawTransactionForAddress(txs[i], err, res, body, false);
             });
         }
     }
 
     processMempoolTx(tx) {
         downloadRawTransactionVerbose(tx, (err, res, body) => {
-            this.parseRawTransactionForAddress(err, res, body, true);
+            this.parseRawTransactionForAddress(tx, err, res, body, true);
         });
     }
 
