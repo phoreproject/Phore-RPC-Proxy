@@ -20,7 +20,7 @@ function createBasicAuthHeader() {
 function sendRpcCall(rpcCommand, callback, ...arg) {
     return request.post(config.phored_host + ':' + config.phored_rpc_port, {
         headers: createBasicAuthHeader(),
-        json: createJsonData(rpcCommand, arg),
+        json: createJsonData(rpcCommand, ...arg),
     }, callback);
 }
 
@@ -53,7 +53,29 @@ class Subscriber {
     }
 
     broadcastAddressMessage(address, tx, mempool) {
+        let subscribedDict = this.subscribedToAddress;
+        if (mempool) {
+            subscribedDict = this.subscribedToAddressMempool;
+        }
 
+        if (!(address in subscribedDict)) {
+            console.log("Nobody subscribed to address:", address);
+            return;
+        }
+
+        for (let userId in subscribedDict[address]) {
+            if (!subscribedDict[address].hasOwnProperty(userId)) {
+                continue;
+            }
+
+            if (!(userId in this.clientIds)) {
+                console.log("User id missing!");
+                continue;
+            }
+
+            let userSocket = this.clientIds[userId];
+            userSocket.emit(eventNames.canals.subscribeAddressRoom, address, tx, mempool);
+        }
     }
 
     broadcastTransactionMessage(tx, mempool, message) {
@@ -70,17 +92,13 @@ class Subscriber {
         }
 
         if (body.result === undefined ||
-            body.result['tx'] === undefined ||
-            body.result['tx']['vout'] === undefined){
+            body.result['vout'] === undefined){
             console.log("Transaction wrong format: ", body.result);
             return;
         }
 
-        for (let tx in body.result["tx"]["vout"]) {
-            if (!body.result["tx"]["vout"].hasOwnProperty(tx)) {
-                continue;
-            }
-
+        for (let i = 0; i < body.result["vout"].length; i++) {
+            const tx = body.result["vout"][i];
             //TODO
             // this.broadcastTransactionMessage(body.result["tx"]["hex"], mempool, "");
 
@@ -88,36 +106,27 @@ class Subscriber {
                 continue;
             }
 
-            for (let address in tx["scriptPubKey"]["addresses"]) {
-                if (!tx["scriptPubKey"]["addresses"].hasOwnProperty(address)){
-                    continue;
-                }
+            for (let j = 0; j < tx["scriptPubKey"]["addresses"].length; j++) {
+                const address = tx["scriptPubKey"]["addresses"][j];
                 // TODO tx? check
                 this.broadcastAddressMessage(address, tx, mempool);
             }
         }
     }
 
-    processRawTransaction(err, res, body) {
-        return this.parseRawTransactionForAddress(err, res, body, false);
-    }
-
-    processRawMempoolTransaction(err, res, body) {
-        return this.parseRawTransactionForAddress(err, res, body, true);
-    }
-
     processTxs(txs) {
-        for (let tx in txs) {
-            if (!txs.hasOwnProperty(tx)) {
-                continue;
-            }
+        for (let i = 0; i < txs.length; i++) {
             // get raw transactions from phored
-            downloadRawTransaction(tx, this.processRawTransaction);
+            downloadRawTransaction(txs[i], (err, res, body) => {
+                this.parseRawTransactionForAddress(err, res, body, false);
+            });
         }
     }
 
     processMempoolTx(tx) {
-        downloadRawTransaction(tx, this.processRawMempoolTransaction);
+        downloadRawTransaction(tx, (err, res, body) => {
+            this.parseRawTransactionForAddress(err, res, body, true);
+        });
     }
 
     async processBlockNotifyEvent(blockHash) {
@@ -128,13 +137,18 @@ class Subscriber {
                     if (err) {
                         return reject(err);
                     }
-                    else if (res && res.statusCode !== 200) {
-                        return reject("Failed download", eventNames.rpc.getblock, "with params:", blockHash || "empty",
-                            "because", body.error.message);
+                    else if ((res && res.statusCode !== 200) || body.error !== null) {
+                        let errorMsg = body.error.message !== undefined ? body.error.message : "empty";
+                        return reject("Failed download " + eventNames.rpc.getblock + "with params: " + (blockHash || "empty") +
+                            ", because: " + errorMsg);
                     }
 
-                    if (body.result['tx'] !== undefined) {
+                    if (body.result !== null && body.result['tx'] !== undefined) {
                         this.processTxs(body.result['tx']);
+                    }
+                    else {
+                        console.log("Unknown error");
+                        return reject("Unknown error");
                     }
 
                     console.log("Success download", eventNames.rpc.getblock, "with params:", blockHash || "empty");
@@ -165,7 +179,7 @@ class Subscriber {
                 if (index !== -1) {
                     dict[key].splice(index, 1);
                 }
-                if (dict[key].length() === 0) {
+                if (dict[key].length === 0) {
                     delete dict[key];
                 }
             }
