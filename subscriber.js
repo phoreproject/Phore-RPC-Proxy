@@ -54,13 +54,11 @@ class Subscriber {
             return;
         }
 
-        for (let userId in subscribedDict[address]) {
-            if (!subscribedDict[address].hasOwnProperty(userId)) {
-                continue;
-            }
+        for (let i = 0; i < subscribedDict[address].length; i++) {
+            const userId = subscribedDict[address][i];
 
             if (!(userId in this.clientIds)) {
-                console.log("User id missing!");
+                console.log("User id:", userId, "is missing!");
                 continue;
             }
 
@@ -70,6 +68,11 @@ class Subscriber {
     }
 
     broadcastTransactionMessage(tx, mempool, message) {
+        let subscribedDict = this.subscribedToBloom;
+        if (mempool) {
+            subscribedDict = this.subscribedToBloomMempool;
+        }
+
 
     }
 
@@ -201,10 +204,10 @@ class Subscriber {
     subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags) {
         this.clientIds[socket.id] = socket;
         const filter = new bloomFilter({
-            Filter: filterHex,
-            HashFuncs: hashFunc,
-            Tweak: tweak,
-            Flags: flags,
+            vData: filterHex,
+            nHashFuncs: hashFunc,
+            nTweak: tweak,
+            nFlags: flags,
         });
         if (includeMempool === eventNames.includeTransactionType.include_all) {
             Subscriber.appendToDict(this.subscribedToBloomMempool, filter, socket.id);
