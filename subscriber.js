@@ -93,8 +93,8 @@ class Subscriber {
 
         for (let i = 0; i < body.result["vout"].length; i++) {
             const tx = body.result["vout"][i];
-            //TODO
-            // this.broadcastTransactionMessage(body.result["tx"]["hex"], mempool, "");
+
+            this.broadcastTransactionMessage(body.result, mempool, tx);
 
             if (tx["scriptPubKey"] === undefined || tx["scriptPubKey"]["addresses"] === undefined){
                 continue;
@@ -166,10 +166,10 @@ class Subscriber {
         }
     }
 
-    static removeIfExists(dict, element) {
+    static removeIfValueExists(dict, dictValue) {
         for (let key in dict) {
             if (dict.hasOwnProperty(key)) {
-                const index = dict[key].indexOf(element);
+                const index = dict[key].indexOf(dictValue);
                 if (index !== -1) {
                     dict[key].splice(index, 1);
                 }
@@ -180,12 +180,18 @@ class Subscriber {
         }
     }
 
+    static removeIfKeyExists(dict, key) {
+        if (key in dict) {
+            delete dict[key];
+        }
+    }
+
     unsubscribeAll(socket) {
-        delete this.clientIds[socket.id];
-        Subscriber.removeIfExists(this.subscribedToAddressMempool, socket.id);
-        Subscriber.removeIfExists(this.subscribedToAddress, socket.id);
-        Subscriber.removeIfExists(this.subscribedToBloom, socket.id);
-        Subscriber.removeIfExists(this.subscribedToBloomMempool, socket.id);
+        Subscriber.removeIfKeyExists(this.clientIds, socket.id);
+        Subscriber.removeIfValueExists(this.subscribedToAddressMempool, socket.id);
+        Subscriber.removeIfValueExists(this.subscribedToAddress, socket.id);
+        Subscriber.removeIfKeyExists(this.subscribedToBloom, socket.id);
+        Subscriber.removeIfKeyExists(this.subscribedToBloomMempool, socket.id);
     }
 
     subscribeAddress(socket, address, includeMempool) {
@@ -210,12 +216,12 @@ class Subscriber {
             nFlags: flags,
         });
         if (includeMempool === eventNames.includeTransactionType.include_all) {
-            Subscriber.appendToDict(this.subscribedToBloomMempool, filter, socket.id);
-            Subscriber.appendToDict(this.subscribedToBloom, filter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
+            Subscriber.appendToDict(this.subscribedToBloom, socket.id, filter);
         } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
-            Subscriber.appendToDict(this.subscribedToBloom, filter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloom, socket.id, filter);
         } else {
-            Subscriber.appendToDict(this.subscribedToBloomMempool, filter, socket.id);
+            Subscriber.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
         }
     }
 }
