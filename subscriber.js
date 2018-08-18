@@ -73,7 +73,23 @@ class Subscriber {
             subscribedDict = this.subscribedToBloomMempool;
         }
 
+        for (let userId in this.clientIds) {
+            if (!this.clientIds.hasOwnProperty(userId)) {
+                continue;
+            }
 
+            if (!(userId in subscribedDict)) {
+                continue;
+            }
+
+            for (let filterId = 0; filterId < subscribedDict[userId].length; filterId++) {
+                const filter = subscribedDict[userId][filterId];
+
+                if (filter.contains(tx)) {
+                    this.clientIds[userId].emit(message);
+                }
+            }
+        }
     }
 
     parseRawTransactionForAddress(txHash, err, res, body, mempool){
