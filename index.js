@@ -40,6 +40,7 @@ redisClient.on('message', async (channel, message) => {
 // new socket client connection
 io.on('connect', (socket) => {
     console.log("Client", socket.id, "connected");
+
     socket.on(eventNames.subscriptions.subscribeBlockHash, (fn) => {
         console.log("Client", socket.id, "subscribe to new blocks hash notification");
         socket.join(eventNames.canals.subscribeBlockHashRoom);
@@ -136,6 +137,10 @@ io.on('connect', (socket) => {
             }
         }
         subscriber.unsubscribeAll(socket);
+    });
+
+    socket.on('error', (err) => {
+        console.log(err);
     });
 
     socket.on('disconnect', () => {
