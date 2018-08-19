@@ -1,29 +1,28 @@
 const express = require('express'),
     socketio = require('socket.io'),
     config = require('./config.js'),
-    socketioRedis = require('socket.io-redis'),
     redis = require('redis'),
     eventNames = require('./eventNames.js'),
     subscribeClass = require('./subscriber');
 
+// config express app
 let app = express();
 let server = app.listen(config.web_port);
+app.use(express.static('static'));
+
+// config socket io
 let io = socketio(server);
 
-app.use(express.static('static'));
-let redisIO = socketioRedis({
-    host: config.redis_host, port: config.redis_port,
-    subClient: redis.createClient(config.redis_port, config.redis_host),
-    pubClient: redis.createClient(config.redis_port, config.redis_host)
-});
-redisIO.subClient.subscribe(eventNames.redis.blocknotify);
-redisIO.subClient.subscribe(eventNames.redis.mempoolnotify);
-io.adapter(redisIO);
+// config redis
+let redisClient = redis.createClient(config.redis_port, config.redis_host);
+redisClient.subscribe(eventNames.redis.blocknotify);
+redisClient.subscribe(eventNames.redis.mempoolnotify);
 
+// config subscriber
 let subscriber = new subscribeClass.Subscriber();
 
 // new block appeared
-redisIO.subClient.on('message', async (channel, message) => {
+redisClient.on('message', async (channel, message) => {
     // write to all subscribed clients
     if (channel === eventNames.redis.blocknotify) {
         // send new block to all subscribed clients
