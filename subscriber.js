@@ -43,7 +43,7 @@ class Subscriber {
         this.subscribedToBloom = {};
     }
 
-    broadcastAddressMessage(addresses, tx, mempool) {
+    async broadcastAddressMessage(addresses, tx, mempool) {
         let subscribedDict = this.subscribedToAddress;
         if (mempool) {
             subscribedDict = this.subscribedToAddressMempool;
@@ -71,7 +71,7 @@ class Subscriber {
         }
     }
 
-    broadcastBloomMessage(addresses, tx, mempool) {
+    async broadcastBloomMessage(addresses, tx, mempool) {
         let subscribedDict = this.subscribedToBloom;
         if (mempool) {
             subscribedDict = this.subscribedToBloomMempool;
@@ -98,7 +98,7 @@ class Subscriber {
         }
     }
 
-    parseRawTransactionForAddress(txHash, err, res, body, mempool){
+    async parseRawTransactionForAddress(txHash, err, res, body, mempool){
         if(err){
             console.log(err);
         }
@@ -129,14 +129,14 @@ class Subscriber {
         for (let i = 0; i < txs.length; i++) {
             // get raw transactions from phored
             downloadRawTransactionVerbose(txs[i], (err, res, body) => {
-                this.parseRawTransactionForAddress(txs[i], err, res, body, false);
+                return this.parseRawTransactionForAddress(txs[i], err, res, body, false);
             });
         }
     }
 
     processMempoolTx(tx) {
         downloadRawTransactionVerbose(tx, (err, res, body) => {
-            this.parseRawTransactionForAddress(tx, err, res, body, true);
+            return this.parseRawTransactionForAddress(tx, err, res, body, true);
         });
     }
 
