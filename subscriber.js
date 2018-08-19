@@ -43,31 +43,35 @@ class Subscriber {
         this.subscribedToBloom = {};
     }
 
-    broadcastAddressMessage(address, tx, mempool) {
+    broadcastAddressMessage(addresses, tx, mempool) {
         let subscribedDict = this.subscribedToAddress;
         if (mempool) {
             subscribedDict = this.subscribedToAddressMempool;
         }
 
-        if (!(address in subscribedDict)) {
-            console.log("Nobody subscribed to address:", address);
-            return;
-        }
+        for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
+            const address = addresses[addressIndex];
 
-        for (let i = 0; i < subscribedDict[address].length; i++) {
-            const userId = subscribedDict[address][i];
-
-            if (!(userId in this.clientIds)) {
-                console.log("User id:", userId, "is missing!");
+            if (!(address in subscribedDict)) {
+                console.log("Nobody subscribed to address:", address);
                 continue;
             }
 
-            let userSocket = this.clientIds[userId];
-            userSocket.emit(eventNames.canals.subscribeAddressRoom, address, tx, mempool);
+            for (let subIndex = 0; subIndex < subscribedDict[address].length; subIndex++) {
+                const userId = subscribedDict[address][subIndex];
+
+                if (!(userId in this.clientIds)) {
+                    console.log("User id:", userId, "is missing!");
+                    continue;
+                }
+
+                let userSocket = this.clientIds[userId];
+                userSocket.emit(eventNames.canals.subscribeAddressRoom, address, tx, mempool);
+            }
         }
     }
 
-    broadcastTransactionMessage(tx, mempool, message) {
+    broadcastBloomMessage(addresses, tx, mempool) {
         let subscribedDict = this.subscribedToBloom;
         if (mempool) {
             subscribedDict = this.subscribedToBloomMempool;
@@ -85,8 +89,10 @@ class Subscriber {
             for (let filterId = 0; filterId < subscribedDict[userId].length; filterId++) {
                 const filter = subscribedDict[userId][filterId];
 
-                if (filter.contains(tx)) {
-                    this.clientIds[userId].emit(message);
+                for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
+                    if (filter.contains(addresses[addressIndex])) {
+                        this.clientIds[userId].emit(tx, addresses[addressIndex], mempool);
+                    }
                 }
             }
         }
@@ -110,17 +116,12 @@ class Subscriber {
         for (let i = 0; i < body.result["vout"].length; i++) {
             const tx = body.result["vout"][i];
 
-            this.broadcastTransactionMessage(body.result, mempool, tx);
-
             if (tx["scriptPubKey"] === undefined || tx["scriptPubKey"]["addresses"] === undefined){
                 continue;
             }
 
-            for (let j = 0; j < tx["scriptPubKey"]["addresses"].length; j++) {
-                const address = tx["scriptPubKey"]["addresses"][j];
-                // TODO tx? check
-                this.broadcastAddressMessage(address, tx, mempool);
-            }
+            this.broadcastAddressMessage(tx["scriptPubKey"]["addresses"], body.result, mempool);
+            this.broadcastBloomMessage(tx["scriptPubKey"]["addresses"], body.result, mempool);
         }
     }
 
@@ -162,6 +163,7 @@ class Subscriber {
                     }
 
                     console.log("Success download", eventNames.rpc.getblock, "with params:", blockHash || "empty");
+
                     resolve(body.result);
                 });
         }).catch((err) => {
