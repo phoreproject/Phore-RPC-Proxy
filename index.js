@@ -1,13 +1,14 @@
-const express = require('express'),
-    socketio = require('socket.io'),
-    config = require('./config.js'),
-    redis = require('redis'),
+const config = require('./config.js'),
     eventNames = require('./eventNames.js'),
-    subscribeClass = require('./subscriber');
+    subscribeClass = require('./subscriber'),
+    tools = require("./tools.js"),
+    express = require('express'),
+    socketio = require('socket.io'),
+    redis = require('redis');
 
 // config express app
 let app = express();
-let server = app.listen(config.web_port);
+let server = app.listen(config.web_host);
 app.use(express.static('static'));
 
 // config socket io
@@ -84,7 +85,7 @@ io.on('connect', (socket) => {
 
         if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
             return callback("includeMempool has unsupported value: " + includeMempool +
-                ", correct values are: " + eventNames.includeTransactionType.keys());
+                ", correct values are: " + Object.values(eventNames.includeTransactionType));
         }
 
         if (typeof address !== "string") {
@@ -102,14 +103,14 @@ io.on('connect', (socket) => {
         const callback = args[args.length - 1];
         let flags = eventNames.bloomUpdateType.None;
 
-        if (args.length < 4 || args.length > 5) {
+        if (args.length < 4 || args.length > 6) {
             return callback("Incorrect number of arguments");
         }
 
-        let filterHex = args[1];
-        let hashFunc = args[2];
-        let tweak = args[3];
-        let includeMempool = args[4];
+        let filterHex = tools.hexToBytes(args[0]);
+        let hashFunc = args[1];
+        let tweak = args[2];
+        let includeMempool = args[3];
 
         if (args.length === 6) {
             flags = args[5];
@@ -117,17 +118,17 @@ io.on('connect', (socket) => {
 
         if (!(flags in Object.values(eventNames.bloomUpdateType))) {
             return callback("includeMempool has unsupported value: " + includeMempool +
-                ", correct values are: " + eventNames.bloomUpdateType.keys());
+                ", correct values are: " + Object.values(eventNames.bloomUpdateType));
         }
 
         if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
             return callback("includeMempool has unsupported value: " + includeMempool +
-                ", correct values are: " + eventNames.includeTransactionType.keys());
+                ", correct values are: " +  Object.values(eventNames.includeTransactionType));
         }
 
         subscriber.subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags);
 
-        return callback("Success");
+        return callback("Success!");
     });
 
     socket.on(eventNames.subscriptions.unsubscribeAll, () => {

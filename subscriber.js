@@ -1,40 +1,9 @@
-const request = require('request'),
-    config = require('./config.js'),
-    eventNames = require('./eventNames.js'),
+const eventNames = require('./eventNames.js'),
+    tools = require('./tools'),
     bloomFilter = require('bloom-filter');
 
 
-function createJsonData(method) {
-    let args = [];
-    for (let i = 1; i < arguments.length; i++) {
-        args.push(arguments[i]);
-    }
-    return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
-}
-
-function createBasicAuthHeader() {
-    return {
-        Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
-    }
-}
-
-function sendRpcCall(rpcCommand, callback, ...arg) {
-    return request.post(config.phored_host + ':' + config.phored_rpc_port, {
-        headers: createBasicAuthHeader(),
-        json: createJsonData(rpcCommand, ...arg),
-    }, callback);
-}
-
-function downloadBlock(blockHash, callback) {
-    return sendRpcCall(eventNames.rpc.getblock, callback, blockHash);
-}
-
-function downloadRawTransactionVerbose(txHash, callback) {
-    // set verbose to true (last parameter = 1)
-    return sendRpcCall(eventNames.rpc.getrawtransaction, callback, txHash, 1);
-}
-
-class Subscriber {
+class SubscribeManager {
     constructor() {
         this.clientIds = {};
         this.subscribedToAddressMempool = {};
@@ -128,14 +97,14 @@ class Subscriber {
     processTxs(txs) {
         for (let i = 0; i < txs.length; i++) {
             // get raw transactions from phored
-            downloadRawTransactionVerbose(txs[i], (err, res, body) => {
+            tools.downloadRawTransactionVerbose(txs[i], (err, res, body) => {
                 return this.parseRawTransactionForAddress(txs[i], err, res, body, false);
             });
         }
     }
 
     processMempoolTx(tx) {
-        downloadRawTransactionVerbose(tx, (err, res, body) => {
+        tools.downloadRawTransactionVerbose(tx, (err, res, body) => {
             return this.parseRawTransactionForAddress(tx, err, res, body, true);
         });
     }
@@ -143,7 +112,7 @@ class Subscriber {
     async processBlockNotifyEvent(blockHash) {
         return new Promise((resolve, reject) => {
             // gen info about block from phored
-            downloadBlock(blockHash,
+            tools.downloadBlock(blockHash,
                 (err, res, body) => {
                     if (err) {
                         return reject(err);
@@ -205,23 +174,23 @@ class Subscriber {
     }
 
     unsubscribeAll(socket) {
-        Subscriber.removeIfKeyExists(this.clientIds, socket.id);
-        Subscriber.removeIfValueExists(this.subscribedToAddressMempool, socket.id);
-        Subscriber.removeIfValueExists(this.subscribedToAddress, socket.id);
-        Subscriber.removeIfKeyExists(this.subscribedToBloom, socket.id);
-        Subscriber.removeIfKeyExists(this.subscribedToBloomMempool, socket.id);
+        SubscribeManager.removeIfKeyExists(this.clientIds, socket.id);
+        SubscribeManager.removeIfValueExists(this.subscribedToAddressMempool, socket.id);
+        SubscribeManager.removeIfValueExists(this.subscribedToAddress, socket.id);
+        SubscribeManager.removeIfKeyExists(this.subscribedToBloom, socket.id);
+        SubscribeManager.removeIfKeyExists(this.subscribedToBloomMempool, socket.id);
     }
 
     subscribeAddress(socket, address, includeMempool) {
         this.clientIds[socket.id] = socket;
 
         if (includeMempool === eventNames.includeTransactionType.include_all) {
-            Subscriber.appendToDict(this.subscribedToAddressMempool, address, socket.id);
-            Subscriber.appendToDict(this.subscribedToAddress, address, socket.id);
+            SubscribeManager.appendToDict(this.subscribedToAddressMempool, address, socket.id);
+            SubscribeManager.appendToDict(this.subscribedToAddress, address, socket.id);
         } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
-            Subscriber.appendToDict(this.subscribedToAddress, address, socket.id);
+            SubscribeManager.appendToDict(this.subscribedToAddress, address, socket.id);
         } else {
-            Subscriber.appendToDict(this.subscribedToAddressMempool, address, socket.id);
+            SubscribeManager.appendToDict(this.subscribedToAddressMempool, address, socket.id);
         }
     }
 
@@ -234,16 +203,16 @@ class Subscriber {
             nFlags: flags,
         });
         if (includeMempool === eventNames.includeTransactionType.include_all) {
-            Subscriber.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
-            Subscriber.appendToDict(this.subscribedToBloom, socket.id, filter);
+            SubscribeManager.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
+            SubscribeManager.appendToDict(this.subscribedToBloom, socket.id, filter);
         } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
-            Subscriber.appendToDict(this.subscribedToBloom, socket.id, filter);
+            SubscribeManager.appendToDict(this.subscribedToBloom, socket.id, filter);
         } else {
-            Subscriber.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
+            SubscribeManager.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
         }
     }
 }
 
 module.exports = {
-    Subscriber: Subscriber
+    Subscriber: SubscribeManager
 };
