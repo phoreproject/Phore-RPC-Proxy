@@ -17,4 +17,5 @@ module.exports = {
 
 
 // example usage
+// addresses from block: f130fc80fffec43e66f0d236d4d0ccb2cacf9284f0910256f6b39161b89a8375
 console.log(...generateBloom(["PPXhkpAZcuKXdo8NF7XKoXUpo75RArKSfR", "PBDkkSiaRVKH7VWHvYSN1fznNmiRM7uqKK"]));

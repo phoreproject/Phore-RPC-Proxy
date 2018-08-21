@@ -11,7 +11,7 @@ function createJsonData(method) {
 
 async function postHttp(method, ...args) {
     return new Promise((resolve, reject) => {
-        request.post('http://127.0.0.1:11772', {
+        request.post(config.phored_host + ":" + config.phored_rpc_port, {
                 headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
                 json: createJsonData(method, ...args),
             },
@@ -31,10 +31,8 @@ async function postHttp(method, ...args) {
     });
 }
 
-async function downloadBestBlockTransactions() {
-    const blockhash = await postHttp("getbestblockhash");
-
-    const block = await postHttp("getblock", blockhash);
+async function downloadBlockTransactions(blockHash) {
+    const block = await postHttp("getblock", blockHash);
 
     for(let i = 0; i < block['tx'].length; i++) {
         const transaction = await postHttp("getrawtransaction",
@@ -44,4 +42,14 @@ async function downloadBestBlockTransactions() {
     }
 }
 
+async function downloadBestBlockTransactions() {
+    const blockhash = await postHttp("getbestblockhash");
+
+    await downloadBlockTransactions(blockhash);
+}
+
+
+//example usage
 downloadBestBlockTransactions();
+// or
+downloadBlockTransactions("f130fc80fffec43e66f0d236d4d0ccb2cacf9284f0910256f6b39161b89a8375");

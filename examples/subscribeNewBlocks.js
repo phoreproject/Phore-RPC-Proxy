@@ -7,7 +7,7 @@ let gb = require('./generateBloom');
 
 
 if (process.argv.length <= 2) { // 1 is node, 2 is this file
-    throw TypeError("You need to provide PHR address");
+    throw TypeError("You need to provide PHR address(es)");
 }
 const addresses = process.argv.slice(2);
 
