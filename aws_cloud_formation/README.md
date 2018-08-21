@@ -3,8 +3,8 @@
 Templates don't include creation of S3 bucket which is necessary for one of services. Bucket is used as cache for phored 
 blocks data storage.
 
-##Use AWS cloud formation to create our stacks (order is important).
-- ###Create basic services (createVpcAndLoadBalancers.yaml):
+## Use AWS cloud formation to create our stacks (order is important).
+- ### Create basic services (createVpcAndLoadBalancers.yaml):
     * VPC (virtual private cloud), 
     * subnets:
         - private,
@@ -33,7 +33,7 @@ blocks data storage.
         - subnets group - attach redis service into private subnets,
         - cluster itself - cluster configuration like Redis version, node size, number of nodes etc,
     
-- ###Create KeepPhoreUpdated service (createKeepPhoreUpdatedService.yaml):
+- ### Create KeepPhoreUpdated service (createKeepPhoreUpdatedService.yaml):
     This service have always only 1 instance. This instance is periodically restarted to keep files with phored database
     updated. Every few hours database is updated to S3 bucket. It allows new instances of phored to start much faster,
     without downloading entire blockchain from other nodes instead they can download cached data from local network.
@@ -44,13 +44,13 @@ blocks data storage.
     * target groups - attach service to public load balancer. This allows other public nodes toexchange blockchain data,
 
 
-- ###Create Phroed service (createPhoredService.yaml):
+- ### Create Phroed service (createPhoredService.yaml):
     This is most important part of RPC. This template create phored instances responsible for RPC responses either from
     the internet and from other containers.
     Service is similar to previous one, except there is more environment variables set and more ports are open (RPC 
     port, http port for easy access from the public and port for connection with other phored nodes from outside).
     
-- ###Create Websocket service (createWebsocketApp.yaml):
+- ### Create Websocket service (createWebsocketApp.yaml):
     This service is responsible for websocket subscriptions. Tasks from that service are able to connect to internal 
     phored services by private LB. Service again is really similar to previous ones, but have more dependencies for 
     other services. To work needs correctly configured Phored service.
