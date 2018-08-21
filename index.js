@@ -8,7 +8,7 @@ const config = require('./config.js'),
 
 // config express app
 let app = express();
-let server = app.listen(config.web_host);
+let server = app.listen(config.web_port);
 app.use(express.static('static'));
 
 // config socket io

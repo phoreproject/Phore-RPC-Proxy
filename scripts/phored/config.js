@@ -11,5 +11,5 @@ module.exports = {
     phored_host: process.env.PHORED_HOST != null ? process.env.PHORED_HOST : 'http://127.0.0.1',
     phored_con_port: process.env.PHORED_PORT != null ? process.env.PHORED_PORT : 11771,
     phored_rpc_port: process.env.PHORED_RPC_PORT != null ? process.env.PHORED_RPC_PORT : 11772,
-    web_port: process.env.WEB_PORT != null ? process.env.WEB_PORT : 80,
+    phored_web_port: process.env.PHORED_WEB_PORT != null ? process.env.PHORED_WEB_PORT : 80,
 };

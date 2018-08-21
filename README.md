@@ -14,10 +14,10 @@ The easiest and multiplatform choise is to use Docker containers.
 3. Start phored instance.
     * cd scripts/phored
     * docker build -t phored
-    * docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $WEB_PORT):80 -e START_FROM_BEGINNING=1 -td phored
+    * docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $PHORED_WEB_PORT):80 -e START_FROM_BEGINNING=1 -td phored
     
     OR run and attach to container to see what is going on
-    * docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $WEB_PORT):80 -it phored npm start
+    * docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $PHORED_WEB_PORT):80 -it phored npm start
     * supervisord -c supervisord.conf
     
     Set up START_FROM_BEGINNING to skip downloading wallet data from AWS bucket. This is not available without AWS api keys.
@@ -25,7 +25,7 @@ The easiest and multiplatform choise is to use Docker containers.
     $WEB_PORT is optional, but recommended one - it can be use to send indirect rpc command wihout basic authentication, 
     but it supports only safe rpc commands.
     It will take some time to download all blocks for phored. It could take even a few hours.
-4. Now RPC is available from http://localhost:$WEB_PORT/rpc
+4. Now RPC is available from http://localhost:$PHORED_WEB_PORT/rpc
 
 # How to set up on aws
 [AWS setup guidlines](aws_cloud_formation/CONTRIBUTING.md)

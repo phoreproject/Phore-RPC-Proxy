@@ -98,8 +98,8 @@ function main() {
             res.status(408).send(e)
         }
     });
-    app.listen(config.web_port, () => {
-        console.log("App is running on port", config.web_port);
+    app.listen(config.phored_web_port, () => {
+        console.log("App is running on port", config.phored_web_port);
     });
 
 }
