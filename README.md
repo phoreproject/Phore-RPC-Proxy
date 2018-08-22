@@ -4,7 +4,20 @@ New generation proxy using JSON-RPC calls to access the Phore blockchain. It off
   * subscribeAddress
   * subscribeBloom
 
-# How to set up locally
+## Getting started
+These instructions will get you a copy of the project up and running for developing or testing purposes.
+
+## Prerequisites
+Depends on environment. This guide covers 2 ways to deploy project.
+1. **Locally using Docker** (free) - basically you need only Docker which is free software available from docker.com website.
+2. **AWS cloud** (generally not free) - in this set up you need AWS account. You don't need any AWS knowledge to set up
+project using CloudFormation.
+
+You can also install it locally without docker, but it is platform dependent solution. For e.g Windows doesn't have
+official Redis build which is necessary for entire system to work. There are no problems with deployment locally on Unix
+and macOs systems. For local deployment you need to install Node.js.
+
+## How to set up locally
 The easiest and multiplatform choise is to use Docker containers.
 1. Setup env variables used in this guide.
 
@@ -37,9 +50,9 @@ The easiest and multiplatform choise is to use Docker containers.
     * WS is available under http://localhost:$WEB_PORT/ws
     
     
-# How to set up on AWS
+## How to set up on AWS
 [AWS setup guidlines](aws_cloud_formation/README.md)
 
 
-# Examples
-[Examples](examples/README.md)
+## Examples
+[Local examples](examples/README.md)

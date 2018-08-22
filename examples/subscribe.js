@@ -1,9 +1,9 @@
-//client.js
-let io = require('socket.io-client');
 let config = require('../config.js');
 let eventNames = require('../eventNames.js');
-let socket = io(config.web_host + ':' + config.web_host, {reconnect: true});
 let gb = require('./generateBloom');
+let io = require('socket.io-client');
+
+let socket = io(config.web_host + ':' + config.web_host, {reconnect: true});
 
 
 if (process.argv.length <= 2) { // 1 is node, 2 is this file
@@ -41,5 +41,9 @@ socket.on(eventNames.subscriptions.subscribeBlock, (message) => {
 });
 
 socket.on(eventNames.subscriptions.subscribeAddress, (message) => {
-    console.log("new block discovered", message);
+    console.log("address discovered", message);
+});
+
+socket.on(eventNames.subscriptions.subscribeBloom, (message) => {
+    console.log("bloom address discovered", message);
 });

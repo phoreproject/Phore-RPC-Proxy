@@ -11,7 +11,10 @@ function createJsonData(method) {
 
 async function postHttp(method, ...args) {
     return new Promise((resolve, reject) => {
-        request.post(config.phored_host + ":" + config.phored_rpc_port, {
+        request.post({
+                url: config.phored_host,
+                path: config.phored_rpc_path,
+                port: config.phored_rpc_port,
                 headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
                 json: createJsonData(method, ...args),
             },
@@ -34,7 +37,7 @@ async function postHttp(method, ...args) {
 async function downloadBlockTransactions(blockHash) {
     const block = await postHttp("getblock", blockHash);
 
-    for(let i = 0; i < block['tx'].length; i++) {
+    for (let i = 0; i < block['tx'].length; i++) {
         const transaction = await postHttp("getrawtransaction",
             block['tx'][i], 1); // 1 for verbose mode
 

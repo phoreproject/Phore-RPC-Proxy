@@ -1,8 +1,6 @@
 const config = require('./config.js'),
     {execFile, spawn} = require('child_process'),
-    util = require('util'),
     fs = require('fs'),
-    fstream = require('fstream'),
     path = require('path'),
     async = require('async'),
     AWS = require('aws-sdk'),
@@ -99,7 +97,7 @@ async function copyData(s3) {
                 if (err) {
                     callback(err, false);
                 }
-                console.log("Dir", bucketDirPath ,"uploaded successfully");
+                console.log("Dir", bucketDirPath, "uploaded successfully");
                 callback(null, true);
             });
 

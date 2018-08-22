@@ -1,4 +1,5 @@
 const eventNames = require('./eventNames'),
+    config = require('./config'),
     request = require('request');
 
 function createJsonData(method) {
@@ -16,7 +17,10 @@ function createBasicAuthHeader() {
 }
 
 function sendRpcCall(rpcCommand, callback, ...arg) {
-    return request.post(config.phored_host + ':' + config.phored_rpc_port, {
+    return request.post({
+        url: config.phored_host,
+        path: config.phored_rpc_path,
+        port: config.phored_rpc_port,
         headers: createBasicAuthHeader(),
         json: createJsonData(rpcCommand, ...arg),
     }, callback);
@@ -24,7 +28,7 @@ function sendRpcCall(rpcCommand, callback, ...arg) {
 
 module.exports = {
     // Convert a hex string to a byte array
-    hexToBytes : function (hex) {
+    hexToBytes: function (hex) {
         let bytes = [];
         for (let c = 0; c < hex.length; c += 2)
             bytes.push(parseInt(hex.substr(c, 2), 16));

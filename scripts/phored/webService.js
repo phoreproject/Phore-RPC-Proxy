@@ -3,7 +3,10 @@ let config = require('./config.js'),
     request = require('request');
 
 function sendRPCCommand(response, method, params) {
-    request.post(config.phored_host + ':' + config.phored_rpc_port, {
+    request.post({
+            url: config.phored_host,
+            path: config.phored_rpc_path,
+            port: config.phored_rpc_port,
             headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
             json: {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
         },
@@ -11,7 +14,7 @@ function sendRPCCommand(response, method, params) {
             if (err) {
                 response.status(400);
             }
-            else if(res && res.statusCode !== 200) {
+            else if (res && res.statusCode !== 200) {
                 response.status(res.statusCode);
             }
             response.send(body);
