@@ -25,7 +25,7 @@ The easiest and multiplatform choise is to use Docker containers.
     **RPC_USER**=_your_unique_rpc_name_  
     **RPC_PASS**=_your_strong_password_  
     
-    You can send other value as follows:  
+    You can set other value as follows:  
     **REDIS_PORT**=6379  
     **PHORED_WEB_PORT**=8000  
     **WEB_PORT**=8001  
@@ -57,12 +57,13 @@ The easiest and multiplatform choise is to use Docker containers.
     Now you need to set env variable for PHORED_HOST (same method as with Redis). Phored host must be specified with
     protocol (for e.g http://127.0.0.1)
     
-    Set up START_FROM_BEGINNING to skip downloading wallet data from AWS bucket. This is not available without AWS api keys.
+    #### NOTE:
+    - Set up START_FROM_BEGINNING to skip downloading wallet data from AWS bucket. This is not available without AWS api keys.
     
-    **WEB_PORT** is optional, but recommended one - it can be use to send indirect rpc command wihout basic authentication, 
+    - **WEB_PORT** is optional, but recommended one - it can be use to send indirect rpc command wihout basic authentication, 
     but it supports only safe rpc commands.
     
-    **It will take some time to download all blocks for phored. It could take even a few hours.**
+    - **It will take some time to download all blocks for phored. It could take even a few hours.**
     
 4. Start webservice instance
     * go to home directory
