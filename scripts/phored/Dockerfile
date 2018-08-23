@@ -1,6 +1,16 @@
 # Docker file used for creating image used by Fargate
 FROM node:10
 
+# RPC pass and username is necessary
+# specify it with --build-arg docker command
+ARG RPC_USER
+RUN test -n "$RPC_USER"
+ENV RPC_USER $RPC_USER
+
+ARG RPC_PASS
+RUN test -n "$RPC_PASS"
+ENV RPC_PASS $RPC_PASS
+
 # Update packages, download supervisord
 RUN apt-get update && apt-get install -y supervisor
 

@@ -2,12 +2,22 @@ let config = require('./config.js'),
     express = require('express'),
     request = require('request');
 
+function createBasicAuthHeader() {
+    if (config.rpc_pass == null || config.rpc_user == null) {
+        return {};
+    }
+    return {
+        Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
+    }
+}
+
+
 function sendRPCCommand(response, method, params) {
     request.post({
             url: config.phored_host,
             path: config.phored_rpc_path,
             port: config.phored_rpc_port,
-            headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
+            headers: createBasicAuthHeader(),
             json: {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
         },
         (err, res, body) => {
