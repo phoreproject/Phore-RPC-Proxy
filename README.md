@@ -19,32 +19,57 @@ and macOs systems. For local deployment you need to install Node.js.
 
 ## How to set up locally
 The easiest and multiplatform choise is to use Docker containers.
-1. Setup env variables used in this guide.
-
+1. Setup env variables used in this guide.   
+    Strong login credentials are necessary to make connection secure.   
+    **Everyone who know your login and password can steal money from wallet with RPC turned on.**  
+    **RPC_USER**=_your_unique_rpc_name_  
+    **RPC_PASS**=_your_strong_password_  
+    
+    You can send other value as follows:  
+    **REDIS_PORT**=6379  
+    **PHORED_WEB_PORT**=8000  
+    **WEB_PORT**=8001  
+    **PHORED_PORT**=22771 -> default is 11771, changed for avoid problems with local wallet instance  
+    **PHORED_RPC_PORT**=22772 -> default is 11772, changed for avoid problems with local wallet instance  
+    
 2. First of all we need redis container:
     * `docker pull redis`
     * `docker run -p $(echo $REDIS_PORT):6379 --name redis_instance -td redis`
+    
+    Lets look for Redis host in docker network by using   
+    `docker network inspect bridge`   
+    and find appropriate container ip in 'Containers' section.
+    Then set up **REDIS_HOST**. 
 
 3. Start phored instance.
     * `cd scripts/phored`
-    * `docker build -t phored`
-    * `docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $PHORED_WEB_PORT):80 -e REDIS_PORT=$(echo $REDIS_PORT) -e START_FROM_BEGINNING=1 -td phored`
+    * `docker build --build-arg RPC_USER=$(echo RPC_USER) --build-arg RPC_PASS=$(echo RPC_PASS) -t phored`
+    
+    AND then  
+    * `docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $PHORED_WEB_PORT):80 
+    -e REDIS_PORT=$(echo $REDIS_PORT) -e REDIS_HOST=$(echo $REDIS_HOST) -e START_FROM_BEGINNING=1 -td phored`
     
     OR run and attach to container to see what is going on
-    * `docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $PHORED_WEB_PORT):80 -e REDIS_PORT=$(echo $REDIS_PORT) -it phored npm start`
+    * `docker run -p $(echo $PHORED_PORT):11771 -p $(echo $PHORED_RPC_PORT):11772 -p $(echo $PHORED_WEB_PORT):80 
+    -e REDIS_PORT=$(echo $REDIS_PORT) -e REDIS_HOST=$(echo $REDIS_HOST) -it phored npm start`
     * `supervisord -c supervisord.conf`
+    
+    Now you need to set env variable for PHORED_HOST (same method as with Redis). Phored host must be specified with
+    protocol (for e.g http://127.0.0.1)
     
     Set up START_FROM_BEGINNING to skip downloading wallet data from AWS bucket. This is not available without AWS api keys.
     
-    $WEB_PORT is optional, but recommended one - it can be use to send indirect rpc command wihout basic authentication, 
+    **WEB_PORT** is optional, but recommended one - it can be use to send indirect rpc command wihout basic authentication, 
     but it supports only safe rpc commands.
     
     **It will take some time to download all blocks for phored. It could take even a few hours.**
-
+    
 4. Start webservice instance
     * go to home directory
-    * `docker build -t rpc_web_service`
-    * `docker run -p $(echo $WEB_PORT):80 -e REDIS_PORT=$(echo $REDIS_PORT) -e PHORED_PORT=$(echo $PHORED_PORT) -e PHORED_RPC_PORT=$(echo $PHORED_RPC_PORT) -e $PHORED_WEB_PORT=(echo $PHORED_WEB_PORT)  -dt rpc_web_service`
+    * `docker build --build-arg RPC_USER=$(echo RPC_USER) --build-arg RPC_PASS=$(echo RPC_PASS) -t rpc_web_service`
+    * `docker run -p $(echo $WEB_PORT):80 -e REDIS_PORT=$(echo $REDIS_PORT) -e REDIS_HOST=$(echo $REDIS_HOST)
+     -e PHORED_PORT=$(echo $PHORED_PORT) -e PHORED_RPC_PORT=$(echo $PHORED_RPC_PORT) 
+     -e $PHORED_WEB_PORT=(echo $PHORED_WEB_PORT) -dt rpc_web_service`
 
 5. Now you can use RPC and websocket server:
     * RPC is available under http://localhost:$PHORED_WEB_PORT/rpc
