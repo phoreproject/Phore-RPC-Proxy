@@ -3,6 +3,16 @@
 # docker run -v LOCAL_BACKUP_DIR:/data/backup_dir -t keep_phore_updated
 FROM node:10
 
+# RPC pass and username is necessary
+# specify it with --build-arg docker command
+ARG RPC_USER
+RUN test -n "$RPC_USER"
+ENV RPC_USER $RPC_USER
+
+ARG RPC_PASS
+RUN test -n "$RPC_PASS"
+ENV RPC_PASS $RPC_PASS
+
 WORKDIR /usr/src/app/
 COPY package*.json /usr/src/app/
 RUN npm install
@@ -19,8 +29,6 @@ ENV PHORE_CLI ./phored/bin/phore-cli
 ENV PHORED_EXEC ./phored/bin/phored
 ENV PHORED_DATA_DIR /root/.phore/
 ENV PHORED_BACKUP_DIR /data/backup_dir
-ENV RPC_USER phorerpc
-ENV RPC_PASS CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b
 
 EXPOSE 11771
 

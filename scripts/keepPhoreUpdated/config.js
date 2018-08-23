@@ -5,7 +5,10 @@ module.exports = {
     backup_S3_region: process.env.AWS_DEFAULT_REGION != null ? process.env.AWS_DEFAULT_REGION : 'us-east-1',
     backup_config_S3_file: process.env.PHORED_BACKUP_S3_INFO != null ? process.env.PHORED_BACKUP_S3_INFO : 'newest_prefix',
     phored_data_dir: process.env.PHORED_DATA_DIR != null ? process.env.PHORED_DATA_DIR : '/root/.phore',
-    rpc_user: process.env.RPC_USER != null ? process.env.RPC_USER : 'phorerpc',
-    rpc_pass: process.env.RPC_PASS != null ? process.env.RPC_PASS : 'CLQAWNfstzFzq3xm1qpG4aX75U2CoVpZqBkkz4QvzY7b',
     start_from_beginning: process.env.START_FROM_BEGINNING != null ? process.env.START_FROM_BEGINNING : false,
+
+    //RPC user and pass for container local instance of phored. This phored instance should never be available
+    //from the public or even other containers. Obligatory parameters.
+    rpc_user: process.env.RPC_USER,
+    rpc_pass: process.env.RPC_PASS,
 };
