@@ -11,6 +11,9 @@ function createJsonData(method) {
 }
 
 function createBasicAuthHeader() {
+    if (config.rpc_pass == null || config.rpc_user == null) {
+        return {};
+    }
     return {
         Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")
     }

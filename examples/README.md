@@ -39,4 +39,5 @@ First address is subscribed by 'subscribeAddress', and all addresses are subscri
 This script use **generateBloom.js** to generate bloom filter.
 
 For debug purposes you can send to 'blocknotify' Redis canal information about new block and it will propagate by the 
-Redis through web socket server to your **subscribe.js** instance.
+Redis through web socket server to your **subscribe.js** instance. Block hash must be valid and exist in Phore 
+blockchain.

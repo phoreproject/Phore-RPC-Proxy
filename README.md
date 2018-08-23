@@ -38,7 +38,8 @@ The easiest and multiplatform choise is to use Docker containers.
     
     $WEB_PORT is optional, but recommended one - it can be use to send indirect rpc command wihout basic authentication, 
     but it supports only safe rpc commands.
-    It will take some time to download all blocks for phored. It could take even a few hours.
+    
+    **It will take some time to download all blocks for phored. It could take even a few hours.**
 
 4. Start webservice instance
     * go to home directory
