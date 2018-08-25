@@ -60,7 +60,15 @@ Parameters:
   DesiredCount:
     Type: Number
     Default: 1
-    Description: How many copies of the service task to run
+    Description: How many copies of the service task to run on the beginning.
+  MinScalingCapacity:
+    Type: Number
+    Default: 1
+    Description: Minimum number copies of the service for scaling activities.
+  MaxScalingCapacity:
+    Type: Number
+    Default: 2
+    Description: Maximum number copies of the service for scaling activities.
 
 Resources:
   # The log driver group definition for service.
@@ -238,36 +246,16 @@ Resources:
           !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
       Priority: !Ref 'RPCPriority'
 
-  AutoScalingCPUAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: Phored containers CPU Utilization High.
-      MetricName: CPUUtilization
-      Namespace: "RPC"
-      Statistic: Average
-      Period: '120'
-      EvaluationPeriods: '2'
-      Threshold: '80'
-      AlarmActions:
-      - Ref: AutoScalingPolicy
-      Dimensions:
-      - Name: ServiceName
-        Value: !Ref 'ServiceName'
-      - Name: ClusterName
-        Value:
-          !Join [':', [!Ref 'StackName', 'ClusterName']]
-      ComparisonOperator: GreaterThanOrEqualToThreshold
 
+  # Configure auto scaling for phored instances.
   AutoScalingTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     DependsOn:
       - Service
     Properties:
-      MaxCapacity: 20
-      MinCapacity: 1
+      MaxCapacity: !Ref 'MaxScalingCapacity'
+      MinCapacity: !Ref 'MinScalingCapacity'
       ResourceId:
-        #Fn::Join: ['/', [service, [Fn::GetAtt: [!Join: [':', [!Ref: 'StackName', 'ClusterName']], ClusterName], Fn::Ref: 'ServiceName']]]
-        #Fn::GetAtt: [!Join [':', [!Ref 'StackName', 'ClusterName']], ClusterName]
         Fn::Join:
         - "/"
         - - service
@@ -280,21 +268,71 @@ Resources:
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
 
-  AutoScalingPolicy:
+  ScaleDownPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: RPC_phored_scaling_policy
+      PolicyName: ScalePhoredDown
       PolicyType: StepScaling
-      ScalingTargetId:
-        Ref: AutoScalingTarget
-      ScalableDimension: ecs:service:DesiredCount
-      ServiceNamespace: ecs
+      ScalingTargetId: !Ref 'AutoScalingTarget'
       StepScalingPolicyConfiguration:
         AdjustmentType: ChangeInCapacity
         Cooldown: 60
-        MetricAggregationType: Average
         StepAdjustments:
         - MetricIntervalLowerBound: 0
-          ScalingAdjustment: 2
-        - MetricIntervalUpperBound: 0
           ScalingAdjustment: -1
+
+  ScaleUpPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ScalePhoredUp
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref 'AutoScalingTarget'
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 1
+
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale up if CPU > 80% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: '60'
+      EvaluationPeriods: '5'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '80'
+      AlarmActions:
+      - !Ref 'ScaleUpPolicy'
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref 'ServiceName'
+      - Name: ClusterName
+        Value:
+          Fn::ImportValue:
+            !Join [':', [!Ref 'StackName', 'ClusterName']]
+
+
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale down if CPU < 30% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: '60'
+      EvaluationPeriods: '5'
+      ComparisonOperator: LessThanThreshold
+      Threshold: '30'
+      AlarmActions:
+      - !Ref 'ScaleDownPolicy'
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref 'ServiceName'
+      - Name: ClusterName
+        Value:
+          Fn::ImportValue:
+            !Join [':', [!Ref 'StackName', 'ClusterName']]
