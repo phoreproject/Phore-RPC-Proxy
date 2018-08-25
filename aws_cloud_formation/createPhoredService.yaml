@@ -237,3 +237,64 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
       Priority: !Ref 'RPCPriority'
+
+  AutoScalingCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Phored containers CPU Utilization High.
+      MetricName: CPUUtilization
+      Namespace: "RPC"
+      Statistic: Average
+      Period: '120'
+      EvaluationPeriods: '2'
+      Threshold: '80'
+      AlarmActions:
+      - Ref: AutoScalingPolicy
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref 'ServiceName'
+      - Name: ClusterName
+        Value:
+          !Join [':', [!Ref 'StackName', 'ClusterName']]
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn:
+      - Service
+    Properties:
+      MaxCapacity: 20
+      MinCapacity: 1
+      ResourceId:
+        #Fn::Join: ['/', [service, [Fn::GetAtt: [!Join: [':', [!Ref: 'StackName', 'ClusterName']], ClusterName], Fn::Ref: 'ServiceName']]]
+        #Fn::GetAtt: [!Join [':', [!Ref 'StackName', 'ClusterName']], ClusterName]
+        Fn::Join:
+        - "/"
+        - - service
+          - Fn::ImportValue:
+              Fn::Join: [':', [!Ref 'StackName', 'ClusterName']]
+          - !Ref 'ServiceName'
+      RoleARN:
+        Fn::ImportValue:
+          Fn::Join: [':', [!Ref 'StackName', 'ECSAutoScalingRole']]
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: RPC_phored_scaling_policy
+      PolicyType: StepScaling
+      ScalingTargetId:
+        Ref: AutoScalingTarget
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 2
+        - MetricIntervalUpperBound: 0
+          ScalingAdjustment: -1
