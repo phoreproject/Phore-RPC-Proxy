@@ -38,10 +38,6 @@ Parameters:
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
-  DesiredCount:
-    Type: Number
-    Default: 1
-    Description: How many copies of the service task to run
 
 Resources:
   # The log driver group definition for service.
@@ -100,7 +96,7 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 75
-      DesiredCount: !Ref 'DesiredCount'
+      DesiredCount: 1 # this service is internal one and needs only 1 instance
       NetworkConfiguration:
         AwsvpcConfiguration:
           SecurityGroups:
