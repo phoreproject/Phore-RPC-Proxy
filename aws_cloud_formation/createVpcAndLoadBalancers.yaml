@@ -395,7 +395,7 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-      - PolicyName: ecs-service
+      - PolicyName: RPC_ecs_service
         PolicyDocument:
           Statement:
           - Effect: Allow
@@ -431,7 +431,7 @@ Resources:
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
-      - PolicyName: AmazonECSTaskExecutionRolePolicy
+      - PolicyName: RPC_task_execution_policy
         PolicyDocument:
           Statement:
           - Effect: Allow
@@ -464,7 +464,33 @@ Resources:
       - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
       - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
 
-  # Security group for Redis. Service should be available from private Subnets
+  # IAM role which is used for auto scaling policies.
+  ApplicationAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - application-autoscaling.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: RPC_auto_scaling_policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:UpdateService
+            - ecs:DescribeServices
+            - application-autoscaling:*
+            - cloudwatch:DescribeAlarms
+            - cloudwatch:GetMetricStatistics
+            Resource: "*"
+
+  # Security group for Redis. Service should be available from private subnets.
   RedisClusterSubnetGroup:
     Type: "AWS::ElastiCache::SubnetGroup"
     Properties:
@@ -521,6 +547,11 @@ Outputs:
     Value: !GetAtt 'ECSTaskS3AccessRole.Arn'
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ECSTaskS3AccessRole' ] ]
+  ECSAutoScalingRole:
+    Description: The ARN of the S3 access container role
+    Value: !GetAtt 'ApplicationAutoScalingRole.Arn'
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'ECSAutoScalingRole' ] ]
   PublicListener:
     Description: The ARN of the public load balancer's Listener
     Value: !Ref PublicLoadBalancerListener
