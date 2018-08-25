@@ -11,6 +11,7 @@ const config = require('./config.js'),
 
 const DIRECTORIES_TO_COPY = ['blocks', 'chainstate', 'sporks', 'zerocoin'];
 const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60 * 6; // 6 hours
+const KEEP_BACKUPS_FOR_2_DAYS = 1000 * 60 * 60 * 24 * 2; // 2 days in ms
 
 function createPhoredInstance() {
     console.log("Starting phored");
@@ -74,7 +75,7 @@ async function isS3InstanceAvailable(s3) {
 }
 
 async function createS3Adapter() {
-    s3 = new AWS.S3();
+    let s3 = new AWS.S3();
     AWS.config.update({region: config.backup_S3_region});
     await isS3InstanceAvailable(s3);
     return s3;
@@ -87,10 +88,16 @@ async function copyData(s3) {
         }
 
         const s3FilePrefix = getFormattedTime();
+        const expirationTimestamp = new Date().getTime() + KEEP_BACKUPS_FOR_2_DAYS;
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
             const body = tar.pack(path.join(config.phored_data_dir, directory)).pipe(zlib.Gzip());
             const bucketDirPath = s3FilePrefix + "/" + directory;
-            const params = {Bucket: config.backup_S3_dir, Key: bucketDirPath, Body: body};
+            const params = {
+                Bucket: config.backup_S3_dir,
+                Key: bucketDirPath,
+                Body: body,
+                Expires: expirationTimestamp,
+            };
             const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
             console.log("Uploading dir", directory, "to", bucketDirPath);
             s3.upload(params, options, (err, data) => {
