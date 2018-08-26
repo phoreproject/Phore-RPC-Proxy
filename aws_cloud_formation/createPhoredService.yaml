@@ -248,6 +248,7 @@ Resources:
 
 
   # Configure auto scaling for phored instances.
+  # Scalable target keep number of phored instances, between min and max.
   AutoScalingTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     DependsOn:
@@ -268,6 +269,7 @@ Resources:
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
 
+  # Configure what to do on low CPU usage. In that case 1 instance will be shut down (ScalingAdjustment: -1).
   ScaleDownPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
@@ -281,6 +283,7 @@ Resources:
         - MetricIntervalLowerBound: 0
           ScalingAdjustment: -1
 
+  # Configure what to do on high CPU usage. In that case 2 instance will be created (ScalingAdjustment: 2).
   ScaleUpPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
@@ -294,6 +297,7 @@ Resources:
         - MetricIntervalLowerBound: 0
           ScalingAdjustment: 1
 
+  # Cloud watch alarm which can trigger scale up policy on CPU usage > 80% for 5 min
   CPUAlarmHigh:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -315,7 +319,7 @@ Resources:
           Fn::ImportValue:
             !Join [':', [!Ref 'StackName', 'ClusterName']]
 
-
+  # Cloud watch alarm which can trigger scale down policy on CPU usage < 30% for 5 min
   CPUAlarmLow:
     Type: AWS::CloudWatch::Alarm
     Properties:

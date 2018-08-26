@@ -50,6 +50,14 @@ Parameters:
     Type: Number
     Default: 1
     Description: How many copies of the service task to run
+  MinScalingCapacity:
+    Type: Number
+    Default: 1
+    Description: Minimum number copies of the service for scaling activities.
+  MaxScalingCapacity:
+    Type: Number
+    Default: 2
+    Description: Maximum number copies of the service for scaling activities.
 
 Resources:
   # The log driver group definition for service.
@@ -177,3 +185,98 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PublicHTTPListener']]
       Priority: !Ref 'HTTPPriority'
+
+
+  # Configure auto scaling for web socket server instances.
+  # Scalable target keep number of web socket server instances, between min and max.
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn:
+    - Service
+    Properties:
+      MaxCapacity: !Ref 'MaxScalingCapacity'
+      MinCapacity: !Ref 'MinScalingCapacity'
+      ResourceId:
+        Fn::Join:
+        - "/"
+        - - service
+          - Fn::ImportValue:
+              Fn::Join: [':', [!Ref 'StackName', 'ClusterName']]
+          - !Ref 'ServiceName'
+      RoleARN:
+        Fn::ImportValue:
+          Fn::Join: [':', [!Ref 'StackName', 'ECSAutoScalingRole']]
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  # Configure what to do on low CPU usage. In that case 1 instance will be shut down (ScalingAdjustment: -1).
+  ScaleDownPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ScalePhoredDown
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref 'AutoScalingTarget'
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: -1
+
+  # Configure what to do on high CPU usage. In that case 2 instance will be created (ScalingAdjustment: 2).
+  ScaleUpPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: ScalePhoredUp
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref 'AutoScalingTarget'
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 60
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 1
+
+  # Cloud watch alarm which can trigger scale up policy on CPU usage > 80% for 5 min
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale up if CPU > 80% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: '60'
+      EvaluationPeriods: '5'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '80'
+      AlarmActions:
+      - !Ref 'ScaleUpPolicy'
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref 'ServiceName'
+      - Name: ClusterName
+        Value:
+          Fn::ImportValue:
+            !Join [':', [!Ref 'StackName', 'ClusterName']]
+
+  # Cloud watch alarm which can trigger scale down policy on CPU usage < 30% for 5 min
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale down if CPU < 30% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: '60'
+      EvaluationPeriods: '5'
+      ComparisonOperator: LessThanThreshold
+      Threshold: '30'
+      AlarmActions:
+      - !Ref 'ScaleDownPolicy'
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref 'ServiceName'
+      - Name: ClusterName
+        Value:
+          Fn::ImportValue:
+            !Join [':', [!Ref 'StackName', 'ClusterName']]
