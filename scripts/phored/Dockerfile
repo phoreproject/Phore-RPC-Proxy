@@ -27,6 +27,7 @@ RUN cp ./phore/bin/phored ./phored
 
 # Copy rest of scripts
 COPY . /usr/src/app/
+# Hack for supervisord problems with env variables
 RUN echo command=./phored -printtoconsole -server -rpcuser=$RPC_USER -rpcpassword=$RPC_PASS -rest "\"-blocknotify=node ./notify.js blocknotify %%s\"" "\"-mempoolnotify=node ./notify.js mempoolnotify %%s\"" >> supervisord.conf
 
 # Create dir for supervisord logs

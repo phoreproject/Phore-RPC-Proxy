@@ -133,6 +133,8 @@ Resources:
       - LoadBalancerRPCRule
     Properties:
       ServiceName: !Ref 'ServiceName'
+      # give task time to download necessary data, connect to nodes, update blocks and start web server.
+      HealthCheckGracePeriodSeconds: 150
       Cluster:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'ClusterName']]
