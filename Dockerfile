@@ -5,6 +5,16 @@ COPY package*.json /usr/src/app/
 RUN npm install
 COPY . /usr/src/app/
 
+# RPC pass and username is necessary
+# specify it with --build-arg docker command
+ARG RPC_USER
+RUN test -n "$RPC_USER"
+ENV RPC_USER $RPC_USER
+
+ARG RPC_PASS
+RUN test -n "$RPC_PASS"
+ENV RPC_PASS $RPC_PASS
+
 ENV REDIS_HOST 127.0.0.1
 ENV REDIS_PORT 6379
 # phored host must be specified with protocol
