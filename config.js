@@ -6,7 +6,7 @@ module.exports = {
     phored_host: process.env.PHORED_HOST != null ? process.env.PHORED_HOST : 'http://127.0.0.1',
     phored_con_port: process.env.PHORED_PORT != null ? process.env.PHORED_PORT : 11771,
     phored_rpc_port: process.env.PHORED_RPC_PORT != null ? process.env.PHORED_RPC_PORT : 11772,
-    phored_rpc_path: process.env.PHORED_RPC_PATH != null ? process.env.PHORED_RPC_PATH : "",
+    phored_rpc_path: process.env.PHORED_RPC_PATH != null ? process.env.PHORED_RPC_PATH : "/rpc",
     rpc_user: process.env.RPC_USER,
     rpc_pass: process.env.RPC_PASS,
 };
