@@ -70,6 +70,74 @@ Parameters:
     Default: 2
     Description: Maximum number copies of the service for scaling activities.
 
+# This section will group and rename parameters for user.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    -
+      Label:
+        default: 'Basic Configuration'
+      Parameters:
+      - StackName
+      - ServiceName
+      - ImageUrl
+    -
+      Label:
+        default: 'Network Configuration'
+      Parameters:
+      - ContainerPort
+      - ContainerHTTPPort
+      - ContainerRPCPort
+      - Path
+      - Priority
+      - HTTPPriority
+      - RPCPriority
+    -
+      Label:
+        default: 'Task Configuration'
+      Parameters:
+      - ContainerCpu
+      - ContainerMemory
+    -
+      Label:
+        default: 'Scaling Configuration'
+      Parameters:
+      - MinScalingCapacity
+      - MaxScalingCapacity
+      - DesiredCount
+    ParameterLabels:
+      StackName:
+        default: 'Name of basic stack (vpc, load balancers etc)'
+      ServiceName:
+        default: 'Service name'
+      ImageUrl:
+        default: 'ECR Docker image'
+      ContainerPort:
+        default: 'Phored port (for connection with other public Phored nodes)'
+      ContainerHTTPPort:
+        default: 'HTTP port'
+      ContainerRPCPort:
+        default: 'RPC port'
+      Path:
+        default: 'Serve rpc on url'
+      Priority:
+        default: 'Phored connection priority'
+      HTTPPriority:
+        default: 'HTTP priority'
+      RPCPriority:
+        default: 'RPC priority'
+      ContainerCpu:
+        default: 'Container CPU in AWS terms'
+      ContainerMemory:
+        default: 'Container memory in MB'
+      MinScalingCapacity:
+        default: 'Minimum number of instances'
+      MaxScalingCapacity:
+        default: 'Maximum number of instances'
+      DesiredCount:
+        default: 'Initialize number of instances'
+
+
 Resources:
   # The log driver group definition for service.
   LogDriver:
