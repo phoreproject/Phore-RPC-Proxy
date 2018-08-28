@@ -7,6 +7,10 @@ module.exports = {
     phored_data_dir: process.env.PHORED_DATA_DIR != null ? process.env.PHORED_DATA_DIR : '/root/.phore',
     start_from_beginning: process.env.START_FROM_BEGINNING != null ? process.env.START_FROM_BEGINNING : false,
 
+    // in minutes
+    keep_backup_for: process.env.KEEP_BACKUP_FOR != null ? process.env.KEEP_BACKUP_FOR : 60 * 48, // 48h
+    create_backup_every: process.env.CREATE_SNAPSHOT_EVERY != null ? process.env.CREATE_SNAPSHOT_EVERY : 60 * 3, // 6h
+
     //RPC user and pass for container local instance of phored. This phored instance should never be available
     //from the public or even other containers. Obligatory parameters.
     rpc_user: process.env.RPC_USER,

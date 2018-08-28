@@ -10,8 +10,8 @@ const config = require('./config.js'),
 
 
 const DIRECTORIES_TO_COPY = ['blocks', 'chainstate', 'sporks', 'zerocoin'];
-const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * 60 * 6; // 6 hours
-const KEEP_BACKUPS_FOR_2_DAYS = 1000 * 60 * 60 * 24 * 2; // 2 days in ms
+const CREATE_SNAPSHOT_EVERY_MS = 1000 * 60 * config.create_backup_every; //convert from minutes to ms
+const KEEP_BACKUPS_FOR_MS = 1000 * 60 * config.keep_backup_for;
 
 function createPhoredInstance() {
     console.log("Starting phored");
@@ -88,7 +88,7 @@ async function copyData(s3) {
         }
 
         const s3FilePrefix = getFormattedTime();
-        const expirationTimestamp = new Date().getTime() + KEEP_BACKUPS_FOR_2_DAYS;
+        const expirationTimestamp = new Date().getTime() + KEEP_BACKUPS_FOR_MS;
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
             const body = tar.pack(path.join(config.phored_data_dir, directory)).pipe(zlib.Gzip());
             const bucketDirPath = s3FilePrefix + "/" + directory;
@@ -140,6 +140,8 @@ async function main() {
         app.listen(80);
 
         console.log("Started");
+        console.log("Backups are automatically cleared after", config.keep_backup_for, "minutes");
+        console.log("Backups are created every", config.create_backup_every, "minutes");
         const s3 = await createS3Adapter();
         while (true) {
             let phoredInstance = createPhoredInstance();
