@@ -14,7 +14,7 @@ Parameters:
   ImageUrl:
     Type: String
     Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/web_service:latest
-    Description: web socket application
+    Description: web socket application image
   ContainerHTTPPort:
     Type: Number
     Default: 80
@@ -60,7 +60,7 @@ Parameters:
     Default: 2
     Description: Maximum number copies of the service for scaling activities.
 
-
+# This section will group and rename parameters for user.
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

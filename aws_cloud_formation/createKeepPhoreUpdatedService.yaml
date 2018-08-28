@@ -13,7 +13,7 @@ Parameters:
   ImageUrl:
     Type: String
     Default: 703473045561.dkr.ecr.us-east-1.amazonaws.com/keep_phore_updated:latest
-    Description: keep_phore_updated
+    Description: keep phore updated image
   ContainerHTTPPort:
     Type: Number
     Default: 80
@@ -38,6 +38,45 @@ Parameters:
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
+
+# This section will group and rename parameters for user.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    -
+      Label:
+        default: 'Basic Configuration'
+      Parameters:
+      - StackName
+      - ServiceName
+      - ImageUrl
+    -
+      Label:
+        default: 'Network Configuration'
+      Parameters:
+      - ContainerHTTPPort
+      - Path
+    -
+      Label:
+        default: 'Task Configuration'
+      Parameters:
+      - ContainerCpu
+      - ContainerMemory
+    ParameterLabels:
+      StackName:
+        default: 'Name of basic stack (vpc, load balancers etc)'
+      ServiceName:
+        default: 'Service name'
+      ImageUrl:
+        default: 'ECR Docker image'
+      ContainerHTTPPort:
+        default: 'HTTP port'
+      Path:
+        default: 'Serve service on url'
+      ContainerCpu:
+        default: 'Container CPU in AWS terms'
+      ContainerMemory:
+        default: 'Container memory in MB'
 
 Resources:
   # The log driver group definition for service.
@@ -89,6 +128,7 @@ Resources:
     DependsOn: LoadBalancerHTTPRule
     Properties:
       ServiceName: !Ref 'ServiceName'
+      HealthCheckGracePeriodSeconds: 30
       Cluster:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'ClusterName']]
