@@ -9,7 +9,7 @@ module.exports = {
 
     // in minutes
     keep_backup_for: process.env.KEEP_BACKUP_FOR != null ? process.env.KEEP_BACKUP_FOR : 60 * 48, // 48h
-    create_backup_every: process.env.CREATE_SNAPSHOT_EVERY != null ? process.env.CREATE_SNAPSHOT_EVERY : 60 * 3, // 6h
+    create_backup_every: process.env.CREATE_SNAPSHOT_EVERY != null ? process.env.CREATE_SNAPSHOT_EVERY : 60 * 3, // 3h
 
     //RPC user and pass for container local instance of phored. This phored instance should never be available
     //from the public or even other containers. Obligatory parameters.

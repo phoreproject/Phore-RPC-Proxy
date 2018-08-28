@@ -102,7 +102,7 @@ function main() {
         }
     });
 
-    app.all('*', (req, res) => {
+    app.get('*', (req, res) => {
         console.log("Health check");
         try {
             sendRPCCommand(res, "ping", []);
