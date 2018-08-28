@@ -12,6 +12,7 @@ function createJsonData(method) {
 
 function createUri() {
     // there is some problem with requests library and options, everything will be in inside url.
+    console.log("Download from uri", config.phored_host + ":" + config.phored_rpc_port + config.phored_rpc_path);
     return config.phored_host + ":" + config.phored_rpc_port + config.phored_rpc_path;
 }
 

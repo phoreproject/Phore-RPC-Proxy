@@ -51,12 +51,18 @@ Parameters:
     Description: The priority for the routing rule added to the load balancer.
                  This only applies if your have multiple services which have been
                  assigned to different paths on the load balancer.
-  RPCPriority:
+  PrivRPCPriority:
      Type: Number
      Default: 14
      Description: The priority for the routing rule added to the load balancer.
                   This only applies if your have multiple services which have been
                   assigned to different paths on the load balancer.
+  PrivHTTPPriority:
+    Type: Number
+    Default: 13
+    Description: The priority for the routing rule added to the load balancer.
+      This only applies if your have multiple services which have been
+      assigned to different paths on the load balancer.
   DesiredCount:
     Type: Number
     Default: 1
@@ -91,7 +97,8 @@ Metadata:
       - Path
       - Priority
       - HTTPPriority
-      - RPCPriority
+      - PrivRPCPriority
+      - PrivHTTPPriority
     -
       Label:
         default: 'Task Configuration'
@@ -121,11 +128,13 @@ Metadata:
       Path:
         default: 'Serve rpc on url'
       Priority:
-        default: 'Phored connection priority'
+        default: 'Public LB Phored connection priority'
       HTTPPriority:
-        default: 'HTTP priority'
-      RPCPriority:
-        default: 'RPC priority'
+        default: 'Public LB HTTP priority'
+      PrivRPCPriority:
+        default: 'Private LB RPC priority'
+      PrivHTTPPriority:
+        default: 'Private LB http priority'
       ContainerCpu:
         default: 'Container CPU in AWS terms'
       ContainerMemory:
@@ -198,7 +207,8 @@ Resources:
     DependsOn:
       - LoadBalancerRule
       - LoadBalancerHTTPRule
-      - LoadBalancerRPCRule
+      - PrivateLoadBalancerRPCRule
+      - PrivateLoadBalancerHTTPRule
     Properties:
       ServiceName: !Ref 'ServiceName'
       # give task time to download necessary data, connect to nodes, update blocks and start web server.
@@ -243,7 +253,7 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'VPCId']]
 
-  # Create a rule on the load balancer for routing traffic to the target group
+  # Create a rule on the load balancer for routing public Phored nodes traffic to the target group
   LoadBalancerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
@@ -290,11 +300,11 @@ Resources:
           !Join [':', [!Ref 'StackName', 'PublicHTTPListener']]
       Priority: !Ref 'HTTPPriority'
 
-  TargetRPCGroup:
+  PrivateTargetRPCGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       TargetType: ip
-      Name: !Join ['-', [!Ref 'AWS::StackName', !Ref 'ContainerRPCPort']]
+      Name: !Join ['-', [!Ref 'AWS::StackName', 'Priv', !Ref 'ContainerRPCPort']]
       Port: !Ref 'ContainerRPCPort'
       Protocol: HTTP
       VpcId:
@@ -302,11 +312,11 @@ Resources:
           !Join [':', [!Ref 'StackName', 'VPCId']]
 
   # Create a rule on the private load balancer for routing rpc traffic from other containers
-  LoadBalancerRPCRule:
+  PrivateLoadBalancerRPCRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
       Actions:
-        - TargetGroupArn: !Ref 'TargetRPCGroup'
+        - TargetGroupArn: !Ref 'PrivateTargetRPCGroup'
           Type: 'forward'
       Conditions:
         - Field: path-pattern
@@ -314,7 +324,33 @@ Resources:
       ListenerArn:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PrivateRPCListener']]
-      Priority: !Ref 'RPCPriority'
+      Priority: !Ref 'PrivRPCPriority'
+
+  PrivateTargetHTTPGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      TargetType: ip
+      Name: !Join ['-', [!Ref 'AWS::StackName', 'Priv', !Ref 'ContainerHTTPPort']]
+      Port: !Ref 'ContainerHTTPPort'
+      Protocol: HTTP
+      VpcId:
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'VPCId']]
+
+  # Create a rule on the private load balancer for routing rpc traffic from other containers
+  PrivateLoadBalancerHTTPRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - TargetGroupArn: !Ref 'PrivateTargetHTTPGroup'
+        Type: 'forward'
+      Conditions:
+      - Field: path-pattern
+        Values: [!Join ['', [!Ref 'Path', '*']]]
+      ListenerArn:
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'PrivateHTTPListener']]
+      Priority: !Ref 'PrivHTTPPriority'
 
 
   # Configure auto scaling for phored instances.
