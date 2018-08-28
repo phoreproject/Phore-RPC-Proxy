@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Deploy a service on AWS Fargate, hosted in a private subnet, but accessible via a public load balancer.
+Description: Deploy a socketIO service on AWS Fargate, hosted in a private subnet, but accessible via a public load balancer.
 
 Parameters:
   StackName:
