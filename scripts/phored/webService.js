@@ -11,12 +11,13 @@ function createBasicAuthHeader() {
     }
 }
 
+function createUri() {
+    // there is some problem with requests library and options, everything will be in inside url.
+    return config.phored_host + ":" + config.phored_rpc_port + config.phored_rpc_path;
+}
 
 function sendRPCCommand(response, method, params) {
-    request.post({
-            url: config.phored_host,
-            path: config.phored_rpc_path,
-            port: config.phored_rpc_port,
+    request.post(createUri(), {
             headers: createBasicAuthHeader(),
             json: {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
         },
@@ -111,6 +112,7 @@ function main() {
             res.status(408).send(e)
         }
     });
+
     app.listen(config.phored_web_port, () => {
         console.log("App is running on port", config.phored_web_port);
     });

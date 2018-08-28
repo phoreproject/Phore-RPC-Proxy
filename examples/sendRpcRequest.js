@@ -1,4 +1,5 @@
 let config = require('../config.js'),
+    tools = require('../tools'),
     request = require('request');
 
 function createJsonData(method) {
@@ -11,11 +12,9 @@ function createJsonData(method) {
 
 async function postHttp(method, ...args) {
     return new Promise((resolve, reject) => {
-        request.post({
-                url: config.phored_host,
-                path: config.phored_rpc_path,
-                port: config.phored_rpc_port,
-                headers: {Authorization: "Basic " + Buffer.from(config.rpc_user + ":" + config.rpc_pass).toString("base64")},
+        request.post(tools.createUri(),
+            {
+                headers: tools.createBasicAuthHeader(),
                 json: createJsonData(method, ...args),
             },
             (err, res, body) => {

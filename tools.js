@@ -10,6 +10,11 @@ function createJsonData(method) {
     return {"jsonrpc": "2.0", "method": method, "params": args, "id": 1}
 }
 
+function createUri() {
+    // there is some problem with requests library and options, everything will be in inside url.
+    return config.phored_host + ":" + config.phored_rpc_port + config.phored_rpc_path;
+}
+
 function createBasicAuthHeader() {
     if (config.rpc_pass == null || config.rpc_user == null) {
         return {};
@@ -20,10 +25,7 @@ function createBasicAuthHeader() {
 }
 
 function sendRpcCall(rpcCommand, callback, ...arg) {
-    return request.post({
-        url: config.phored_host,
-        path: config.phored_rpc_path,
-        port: config.phored_rpc_port,
+    return request.post(createUri(), {
         headers: createBasicAuthHeader(),
         json: createJsonData(rpcCommand, ...arg),
     }, callback);
@@ -56,4 +58,7 @@ module.exports = {
         // set verbose to true (last parameter = 1)
         return sendRpcCall(eventNames.rpc.getrawtransaction, callback, txHash, 1);
     },
+
+    createUri: createUri,
+    createBasicAuthHeader: createBasicAuthHeader,
 };
