@@ -19,7 +19,25 @@ Parameters:
     Type: Number
     Default: 80
     Description: What port number services are using to connections.
-           
+
+# This section will group and rename parameters for user.
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    -
+      Label:
+        default: 'Network Configuration'
+      Parameters:
+      - PhoredPort
+      - ServicesHTTPPort
+      - PhoredRPCPort
+    ParameterLabels:
+      PhoredPort:
+        default: 'Phored port (for connection with other public Phored nodes)'
+      ServicesHTTPPort:
+        default: 'HTTP port'
+      PhoredRPCPort:
+        default: 'RPC port'
 Mappings:
   # Hard values for the subnet masks. These masks define
   # the range of internal IP addresses that can be assigned.
