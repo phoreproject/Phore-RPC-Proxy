@@ -88,7 +88,6 @@ async function copyData(s3) {
         }
 
         const s3FilePrefix = getFormattedTime();
-        const expirationTimestamp = new Date().getTime() + KEEP_BACKUPS_FOR_MS;
         async.every(DIRECTORIES_TO_COPY, (directory, callback) => {
             const body = tar.pack(path.join(config.phored_data_dir, directory)).pipe(zlib.Gzip());
             const bucketDirPath = s3FilePrefix + "/" + directory;
@@ -96,7 +95,7 @@ async function copyData(s3) {
                 Bucket: config.backup_S3_dir,
                 Key: bucketDirPath,
                 Body: body,
-                Expires: expirationTimestamp,
+                Tagging: "short_term=True",
             };
             const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
             console.log("Uploading dir", directory, "to", bucketDirPath);
@@ -113,7 +112,7 @@ async function copyData(s3) {
                 s3.putObject({
                     Bucket: config.backup_S3_dir,
                     Key: config.backup_config_S3_file,
-                    Body: s3FilePrefix
+                    Body: s3FilePrefix,
                 }, (err, data) => {
                     if (err) {
                         reject(err);

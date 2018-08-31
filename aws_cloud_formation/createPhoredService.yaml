@@ -337,7 +337,7 @@ Resources:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'VPCId']]
 
-  # Create a rule on the private load balancer for routing rpc traffic from other containers
+  # Create a rule on the private load balancer for routing http traffic from other containers
   PrivateLoadBalancerHTTPRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:

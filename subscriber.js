@@ -118,7 +118,7 @@ class SubscribeManager {
                         return reject(err);
                     }
                     else if ((res && res.statusCode !== 200) || body.error !== null) {
-                        let errorMsg = (body.error !== undefined && body.error.message !== undefined ) ?
+                        let errorMsg = (body.error !== undefined && body.error.message !== undefined) ?
                             body.error.message : "empty";
                         return reject("Failed download " + eventNames.rpc.getblock + "(" + (res.statusCode)
                             + ") with params: " + (blockHash || "empty") + ", because: " + errorMsg);
