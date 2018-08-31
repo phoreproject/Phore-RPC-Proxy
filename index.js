@@ -12,7 +12,7 @@ let server = app.listen(config.web_port);
 app.use(express.static('static'));
 
 // config socket io
-let io = socketio(server);
+let io = socketio(server).of('/socket.io');
 
 // config redis
 let redisClient = redis.createClient(config.redis_port, config.redis_host);

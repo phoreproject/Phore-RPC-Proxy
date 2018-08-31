@@ -31,11 +31,6 @@ Parameters:
     Type: Number
     Default: 1024
     Description: How much memory in megabytes to give the container
-  Path:
-    Type: String
-    Default: '/ws'
-    Description: A path on the public load balancer that this service
-                 should be connected to.
   PhoredRPCPath:
     Type: String
     Default: '/rpc'
@@ -244,12 +239,11 @@ Resources:
           Type: 'forward'
       Conditions:
         - Field: path-pattern
-          Values: [!Join ['', [!Ref 'Path', '*']]]
+          Values: ['/socket.io*'] # socket.io path is necessary for second (pooling) layer
       ListenerArn:
         Fn::ImportValue:
           !Join [':', [!Ref 'StackName', 'PublicHTTPListener']]
       Priority: !Ref 'HTTPPriority'
-
 
   # Configure auto scaling for web socket server instances.
   # Scalable target keep number of web socket server instances, between min and max.
