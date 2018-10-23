@@ -58,6 +58,10 @@ const AllowedMethods = new Set([
     'estimatepriority',
 ]);
 
+const SpecialMethods = {
+    'masternodecount': {method: 'masternode', params: ['count']}
+};
+
 class MethodNotAllowedError extends Error {
     constructor(...args) {
         super(...args);
@@ -77,26 +81,37 @@ function main() {
     });
 
     app.post('/rpc', (req, res, next) => {
-        const method = req.body.method;
-        if (method === undefined) {
+        let bodyMethod = req.body.method;
+        if (bodyMethod === undefined) {
             let error = new Error("Method parameter is missing from body");
             error.statusCode = 400;
             return next(error, req, res);
         }
+        else {
+            bodyMethod = bodyMethod.toLowerCase();
+        }
 
-        if (!AllowedMethods.has(method.toLowerCase())) {
-            let error = new MethodNotAllowedError("Forbidden to run command " + method);
+        if (!AllowedMethods.has(bodyMethod) && !(bodyMethod in SpecialMethods)) {
+            let error = new MethodNotAllowedError("Forbidden to run command " + bodyMethod);
             error.statusCode = 403;
             return next(error);
         }
 
         try {
-            console.log("Sending", method, "with params:", req.body.params || "empty");
-            let params = req.body.params;
-            if (params === undefined) {
-                params = [];
+            let method = bodyMethod;
+            let methodParams = req.body.params;
+            if (methodParams === undefined) {
+                methodParams = [];
             }
-            sendRPCCommand(res, method, params);
+
+            if (bodyMethod in SpecialMethods) {
+                const specialMethodParams = SpecialMethods[bodyMethod];
+                method = specialMethodParams['method'];
+                methodParams = specialMethodParams['params'];
+            }
+
+            console.log("Sending", method, "with params:", methodParams || "empty");
+            sendRPCCommand(res, method, methodParams);
         }
         catch (e) {
             res.status(500).send(e);
