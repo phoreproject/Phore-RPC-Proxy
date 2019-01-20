@@ -18,12 +18,14 @@ COPY package*.json /usr/src/app/
 RUN npm install
 COPY . /usr/src/app/
 
+ARG BINARY_URL_FILE='binary_url_file'
+ENV BINARY_URL_FILE=$BINARY_URL_FILE
 # Download and unpack latest Phore linux binary
 RUN curl -s https://api.github.com/repos/phoreproject/Phore/releases/latest \
       | grep browser_download_url \
       | grep x86_64-linux-gnu \
-      | cut -d '"' -f 4 \
-      | wget -O phore.tar.gz -i -
+      | cut -d '"' -f 4 > $BINARY_URL_FILE
+RUN wget -O phore.tar.gz -i $BINARY_URL_FILE
 RUN mkdir phored
 RUN tar -xzf phore.tar.gz -C phored --strip-components=1
 

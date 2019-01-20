@@ -1,5 +1,5 @@
 const config = require('./config.js'),
-    {execFile, spawn} = require('child_process'),
+    {execFile, spawn, exec} = require('child_process'),
     fs = require('fs'),
     path = require('path'),
     async = require('async'),
@@ -132,6 +132,57 @@ async function copyData(s3) {
     });
 }
 
+async function execPromise(command) {
+    return new Promise(function(resolve, reject) {
+        exec(command, {stdio: 'inherit'}, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            resolve({stdout: stdout.trim(), stderr: stderr.trim()});
+        });
+    });
+}
+
+async function updatePhoredToTheNewestVersion() {
+    if (!fs.existsSync(config.binary_url_file)) {
+        console.log("No file", config.binary_url_file, "exists");
+        return false;
+    }
+
+    try {
+        const currentUrl = fs.readFileSync(config.binary_url_file, 'utf8').trim();
+        // download newest version of available phored
+        const command = 'curl -s https://api.github.com/repos/phoreproject/Phore/releases/latest \\\n' +
+            '      | grep browser_download_url \\\n' +
+            '      | grep x86_64-linux-gnu \\\n' +
+            '      | cut -d \'"\' -f 4';
+
+        let newUrl = await execPromise(command);
+        newUrl = newUrl.stdout.trim();
+        if (currentUrl === newUrl) {
+            console.log("No newer version of phored available. The newest is", newUrl);
+            return false;
+        }
+
+        const downloadCommand = 'wget -O phore.tar.gz ' + newUrl;
+        await execPromise(downloadCommand);
+
+        const tarCommand = 'tar -xzf phore.tar.gz -C phored --strip-components=1';
+        await execPromise(tarCommand);
+
+        fs.writeFileSync(config.binary_url_file, newUrl);
+    }
+    catch (e) {
+        console.log("Cannot update no new version of phored");
+        console.log(e);
+        return false;
+    }
+
+    return true;
+}
+
 async function main() {
     try {
         let app = express();
@@ -147,6 +198,7 @@ async function main() {
             await closePhoredByCLI();
             await isPhoredStopped(phoredInstance);
             await copyData(s3);
+            await updatePhoredToTheNewestVersion();
         }
     }
     catch (e) {
