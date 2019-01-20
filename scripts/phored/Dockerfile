@@ -19,8 +19,12 @@ WORKDIR /usr/src/app/
 COPY package*.json /usr/src/app/
 RUN npm install
 
-# Download and unpack phore binaries
-RUN wget -O phore.tar.gz https://github.com/phoreproject/Phore/releases/download/v1.5.0/phore-1.5.0-x86_64-linux-gnu.tar.gz
+# Download and unpack latest Phore linux binary
+RUN curl -s https://api.github.com/repos/phoreproject/Phore/releases/latest \
+      | grep browser_download_url \
+      | grep x86_64-linux-gnu \
+      | cut -d '"' -f 4 \
+      | wget -O phore.tar.gz -i -
 RUN mkdir phore
 RUN tar -xzf phore.tar.gz -C phore --strip-components=1
 RUN cp ./phore/bin/phored ./phored
