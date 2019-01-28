@@ -53,6 +53,7 @@ const AllowedMethods = new Set([
     'ping',
     'masternodelist',
     'getrawtransaction',
+    'decoderawtransaction',
     'searchrawtransactions',
     'sendrawtransaction',
     'estimatefee',
