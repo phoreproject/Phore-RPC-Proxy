@@ -19,6 +19,15 @@ Parameters:
     Type: Number
     Default: 80
     Description: What port number services are using to connections.
+  ServicesHTTPSPort:
+    Type: Number
+    Default: 443
+    Description: What port number services are using to secure connections.
+  DefaultCertificateHTTPS:
+    Type: String
+    Default: 'AWS::NoValue'
+    Description: HTTPS Certificate ARN
+
 
 # This section will group and rename parameters for user.
 Metadata:
@@ -30,14 +39,20 @@ Metadata:
       Parameters:
       - PhoredPort
       - ServicesHTTPPort
+      - ServicesHTTPSPort
       - PhoredRPCPort
+      - DefaultCertificateHTTPS
     ParameterLabels:
       PhoredPort:
         default: 'Phored port (for connection with other public Phored nodes)'
       ServicesHTTPPort:
         default: 'HTTP port'
+      ServicesHTTPSPort:
+        default: 'HTTPS port'
       PhoredRPCPort:
         default: 'RPC port'
+      DefaultCertificateHTTPS:
+        default: 'Default server certificate ARN'
 Mappings:
   # Hard values for the subnet masks. These masks define
   # the range of internal IP addresses that can be assigned.
@@ -317,6 +332,20 @@ Resources:
       LoadBalancerArn: !Ref 'PublicLoadBalancer'
       Port: !Ref 'ServicesHTTPPort'
       Protocol: HTTP
+
+  PublicLoadBalancerHTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - PublicLoadBalancer
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref 'DefaultCertificateHTTPS'
+      DefaultActions:
+        - TargetGroupArn: !Ref 'DummyTargetGroupPublic'
+          Type: 'forward'
+      LoadBalancerArn: !Ref 'PublicLoadBalancer'
+      Port: !Ref 'ServicesHTTPSPort'
+      Protocol: HTTPS
 
   # An internal load balancer, this would be used for a service that is not
   # directly accessible to the public, but instead should only receive traffic
