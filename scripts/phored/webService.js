@@ -57,6 +57,7 @@ const AllowedMethods = new Set([
     'sendrawtransaction',
     'estimatefee',
     'estimatepriority',
+    'importaddress',
 ]);
 
 const SpecialMethods = {
@@ -70,8 +71,14 @@ class MethodNotAllowedError extends Error {
     }
 }
 
+function useOnlyAppJsonContentType (req, res, next) {
+    req.headers['content-type'] = 'application/json';
+    next();
+}
+
 function main() {
     let app = express();
+    app.use(useOnlyAppJsonContentType);
     app.use(express.json());
 
     // error handler
