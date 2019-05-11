@@ -245,6 +245,22 @@ Resources:
           !Join [':', [!Ref 'StackName', 'PublicHTTPListener']]
       Priority: !Ref 'HTTPPriority'
 
+  # Create a rule on the load balancer for routing HTTPS traffic from internet
+  LoadBalancerHTTPSRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref 'TargetHTTPGroup'
+          Type: 'forward'
+      Conditions:
+        - Field: path-pattern
+          Values: ['/socket.io*'] # socket.io path is necessary for second (pooling) layer
+      ListenerArn:
+        Fn::ImportValue:
+          !Join [':', [!Ref 'StackName', 'PublicHTTPSListener']]
+      Priority: !Ref 'HTTPPriority'
+
+
   # Configure auto scaling for web socket server instances.
   # Scalable target keep number of web socket server instances, between min and max.
   AutoScalingTarget:

@@ -609,6 +609,11 @@ Outputs:
     Value: !Ref PublicLoadBalancerHTTPListener
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicHTTPListener' ] ]
+  PublicHTTPSListener:
+    Description: The ARN of the public load balancer's https Listener
+    Value: !Ref PublicLoadBalancerHTTPSListener
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PublicHTTPSListener' ] ]
   PrivateListener:
     Description: The ARN of the private load balancer's Listener
     Value: !Ref PrivateLoadBalancerListener
