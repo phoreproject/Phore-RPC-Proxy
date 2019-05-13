@@ -3,7 +3,7 @@ let eventNames = require('../eventNames.js');
 let gb = require('./generateBloom');
 let io = require('socket.io-client');
 
-let socket = io(config.web_host + ':' + config.web_host, {reconnect: true});
+let socket = io(config.web_host + ':' + config.web_port, {reconnect: true});
 
 
 if (process.argv.length <= 2) { // 1 is node, 2 is this file
