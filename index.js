@@ -10,6 +10,8 @@ const config = require('./config.js'),
 let app = express();
 let server = app.listen(config.web_port);
 app.use(express.static('static'));
+console.log("App listen on port " + config.web_port);
+console.log("Download url: " + tools.createUri());
 
 // config socket io
 let io = socketio(server).of('/socket.io');
