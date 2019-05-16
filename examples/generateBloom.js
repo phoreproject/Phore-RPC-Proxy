@@ -7,6 +7,17 @@ function generateBloom(addresses) {
     for (let i = 0; i < addresses.length; i++) {
         filter.insert(Buffer.from(addresses[i]));
     }
+
+    //check
+    console.log("Filter contains first address:", filter.contains(Buffer.from(addresses[0])));
+    const newFilter = new BloomFilter({
+        vData: filter.vData,
+        nHashFuncs: filter.nHashFuncs,
+        nTweak: filter.nTweak,
+        nFlags: filter.nFlags,
+    });
+    console.log("New filter contains first address:", newFilter.contains(Buffer.from(addresses[0])));
+
     return [tools.bytesToHex(filter.vData),  filter.nHashFuncs, filter.nTweak, filter.nFlags];
 }
 
