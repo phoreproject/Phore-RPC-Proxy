@@ -3,151 +3,137 @@ const config = require('./config.js'),
     subscribeClass = require('./subscriber'),
     tools = require("./tools.js"),
     express = require('express'),
-    socketio = require('socket.io'),
-    redis = require('redis');
+    redis = require('redis'),
+    WebSocket = require('ws'),
+    http = require('http');
 
 // config express app
-let app = express();
-let server = app.listen(config.web_port);
+const app = express();
 app.use(express.static('static'));
 console.log("App listen on port " + config.web_port);
 console.log("Download url: " + tools.createUri());
 
-// config socket io
-let io = socketio(server).of('/socket.io');
+const server = http.createServer(app);
 
-// config redis
-let redisClient = redis.createClient(config.redis_port, config.redis_host);
-redisClient.subscribe(eventNames.redis.blocknotify);
-redisClient.subscribe(eventNames.redis.mempoolnotify);
+// config websockets
+const wss = new WebSocket.Server({server});
 
 // config subscriber
-let subscriber = new subscribeClass.Subscriber();
+const subscriber = new subscribeClass.Subscriber();
+
+// config redis
+const redisClient = redis.createClient(config.redis_port, config.redis_host);
+redisClient.subscribe(eventNames.redis.blocknotify);
+redisClient.subscribe(eventNames.redis.mempoolnotify);
 
 // new block appeared
 redisClient.on('message', async (channel, message) => {
     // write to all subscribed clients
     if (channel === eventNames.redis.blocknotify) {
-        // send new block to all subscribed clients
-        io.in(eventNames.canals.subscribeBlockHashRoom).emit(eventNames.subscriptions.subscribeBlockHash, message);
-        const block = await subscriber.processBlockNotifyEvent(message);
-        if (block != null) {
-            io.in(eventNames.canals.subscribeBlockRoom).emit(eventNames.subscriptions.subscribeBlock, block);
-        }
+        subscriber.processNewBlockEvent(message);
     }
     else if (channel === eventNames.redis.mempoolnotify) {
         subscriber.processMemPoolEvent(message);
     }
 });
 
-// new socket client connection
-io.on('connect', (socket) => {
-    console.log("Client", socket.id, "connected");
+let wsConnectionCnt = 0;
+// websocket part
+wss.on('connection', (ws, req) => {
+    ws.id = "ws-id-" + wsConnectionCnt++;
+    ws.isAlive = true;
 
-    socket.on(eventNames.subscriptions.subscribeBlockHash, (fn) => {
-        console.log("Client", socket.id, "subscribe to new blocks hash notification");
-        socket.join(eventNames.canals.subscribeBlockHashRoom);
-        fn("Success!");
+    ws.on('ping', ()  => {
+        ws.isAlive = true;
     });
 
-    socket.on(eventNames.subscriptions.subscribeBlock, (fn) => {
-        console.log("Client", socket.id, "subscribe to new blocks notification");
-        socket.join(eventNames.canals.subscribeBlockRoom);
-        fn("Success!");
+    ws.on('pong', ()  => {
+        ws.isAlive = true;
     });
 
-    socket.on(eventNames.subscriptions.subscribeAddress, (...args) => {
-        console.log("Client", socket.id, "subscribe to new address notification");
+    ws.on('message', (message) => {
+        ws.isAlive = true;
+        if (message.startsWith(eventNames.subscriptions.subscribeBlockHash)) {
+            console.log("Client", ws.id, "subscribed to new blocks hash notification");
+            subscriber.subscribeBlockHash(ws);
+        }
+        else if (message.startsWith(eventNames.subscriptions.subscribeBlock)) {
+            console.log("Client", ws.id, "subscribed to new blocks notification");
+            subscriber.subscribeBlock(ws);
+        }
+        else if (message.startsWith(eventNames.subscriptions.subscribeAddress)) {
+            console.log("Client", ws.id, "subscribe to new address notification");
+            let address;
+            let includeMempool;
 
-        // callback which is always last parameter
-        const callback = args[args.length - 1];
-        let address = null;
-        let includeMempool = null;
+            let splitted = message.split(" ");
+            if (splitted.length !== 3) {
+                return ws.send("error: Incorrect number of arguments");
+            }
+            address = splitted[1];
 
-        if (args.length === 2) {
-            let arr = args[0];
-            if (!Array.isArray(arr)) {
-                return callback("Too few parameters or first parameter must be an array");
+            includeMempool = parseInt(splitted[2]);
+            if (isNaN(includeMempool)) {
+                return ws.send("error:" + splitted[2] + "is not a number");
             }
 
-            if (arr.length !== 2) {
-                return callback("Array size must be exactly 2, but is " + arr.length);
+            if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
+                return ws.send("error: includeMempool has unsupported value: " + includeMempool +
+                    ", correct values are: " +  Object.values(eventNames.includeTransactionType));
             }
 
-            address = arr[0];
-            includeMempool = arr[1];
+            subscriber.subscribeAddress(ws, address, includeMempool);
         }
-        else if (args.length === 3) {
-            address = args[0];
-            includeMempool = args[1];
-        }
-        else {
-            return callback("Function have incorrect number of parameters: " + args.length - 1);
-        }
-
-        if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
-            return callback("includeMempool has unsupported value: " + includeMempool +
-                ", correct values are: " + Object.values(eventNames.includeTransactionType));
-        }
-
-        if (typeof address !== "string") {
-            return callback("Address must be a string");
-        }
-
-        subscriber.subscribeAddress(socket, address, includeMempool);
-        return callback("Success!");
-    });
-
-    socket.on(eventNames.subscriptions.subscribeBloom, (...args) => {
-        console.log("Client", socket.id, "subscribe bloom filter");
-
-        // callback which is always last parameter
-        const callback = args[args.length - 1];
-        let flags = eventNames.bloomUpdateType.None;
-
-        if (args.length < 4 || args.length > 6) {
-            return callback("Incorrect number of arguments");
-        }
-
-        let filterHex = tools.hexToBytes(args[0]);
-        let hashFunc = args[1];
-        let tweak = args[2];
-        let includeMempool = args[3];
-
-        if (args.length === 6) {
-            flags = args[5];
-        }
-
-        if (!(flags in Object.values(eventNames.bloomUpdateType))) {
-            return callback("includeMempool has unsupported value: " + includeMempool +
-                ", correct values are: " + Object.values(eventNames.bloomUpdateType));
-        }
-
-        if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
-            return callback("includeMempool has unsupported value: " + includeMempool +
-                ", correct values are: " +  Object.values(eventNames.includeTransactionType));
-        }
-
-        subscriber.subscribeBloom(socket, filterHex, hashFunc, tweak, includeMempool, flags);
-
-        return callback("Success!");
-    });
-
-    socket.on(eventNames.subscriptions.unsubscribeAll, () => {
-        for (const subscriptionName in Object.keys(eventNames.subscriptions)) {
-            if (eventNames.subscriptions.hasOwnProperty(subscriptionName)) {
-                socket.leave(subscriptionName);
+        else if (message.startsWith(eventNames.subscriptions.subscribeBloom)) {
+            let splitted = message.split(" ");
+            if (splitted.length < 5 || splitted.length > 6) {
+                return ws.send("error: Incorrect number of arguments");
             }
+
+            let filterHex = tools.hexToBytes(splitted[1]);
+            let hashFunc = splitted[2];
+            let tweak = splitted[3];
+            let includeMempool = parseInt(splitted[4]);
+            let flags = eventNames.bloomUpdateType.None;
+
+            if (splitted.length === 6) {
+                flags = parseInt(splitted[5]);
+
+                if (isNaN(flags)) {
+                    return ws.send("error: flags parameter" + splitted[5] + "is not a number");
+                }
+            }
+
+            if (isNaN(includeMempool)) {
+                return ws.send("error: includeMempool parameter" + splitted[4] + "is not a number");
+            }
+
+            if (!(flags in Object.values(eventNames.bloomUpdateType))) {
+                return ws.send("error: includeMempool has unsupported value: " + includeMempool +
+                    ", correct values are: " + Object.values(eventNames.bloomUpdateType));
+            }
+
+            if (!(includeMempool in Object.values(eventNames.includeTransactionType))) {
+                return ws.send("error: includeMempool has unsupported value: " + includeMempool +
+                    ", correct values are: " +  Object.values(eventNames.includeTransactionType));
+            }
+
+            subscriber.subscribeBloom(ws, filterHex, hashFunc, tweak, includeMempool, flags)
         }
-        subscriber.unsubscribeAll(socket);
-    });
-
-    socket.on('error', (err) => {
-        console.log(err);
-    });
-
-    socket.on('disconnect', () => {
-        console.log("Client", socket.id, "disconnected");
-        subscriber.unsubscribeAll(socket);
+        else if (message.startsWith(eventNames.subscriptions.unsubscribeAll)) {
+            subscriber.unsubscribeAll(ws);
+        }
     });
 });
+
+setInterval(function ping() {
+    wss.clients.forEach(function (ws) {
+        if (ws.isAlive === false) {
+            subscriber.unsubscribeAll(ws);
+            return ws.terminate();
+        }
+
+        ws.isAlive = false;
+        ws.ping();
+    });
+}, 30000);

@@ -6,10 +6,14 @@ const eventNames = require('./eventNames.js'),
 class SubscribeManager {
     constructor() {
         this.clientIds = {};
+
         this.subscribedToAddressMempool = {};
         this.subscribedToAddress = {};
         this.subscribedToBloomMempool = {};
         this.subscribedToBloom = {};
+
+        this.subscribedToBlock = new Set();
+        this.subscribedToBlockHash = new Set();
     }
 
     async broadcastAddressMessage(addresses, tx, mempool) {
@@ -29,13 +33,12 @@ class SubscribeManager {
             for (let subIndex = 0; subIndex < subscribedDict[address].length; subIndex++) {
                 const userId = subscribedDict[address][subIndex];
 
-                if (!(userId in this.clientIds)) {
+                if (!(this.clientIds.hasOwnProperty(userId))) {
                     console.log("User id:", userId, "is missing!");
                     continue;
                 }
 
-                let userSocket = this.clientIds[userId];
-                userSocket.emit(eventNames.canals.subscribeAddressRoom, address, tx, mempool);
+                this.clientIds[userId].send(tx);
             }
         }
     }
@@ -60,7 +63,7 @@ class SubscribeManager {
 
                 for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
                     if (filter.contains(addresses[addressIndex])) {
-                        this.clientIds[userId].emit(tx, addresses[addressIndex], mempool);
+                        this.clientIds[userId].send(tx);
                     }
                 }
             }
@@ -107,6 +110,24 @@ class SubscribeManager {
         tools.downloadRawTransactionVerbose(tx, (err, res, body) => {
             return this.parseRawTransactionForAddress(tx, err, res, body, true);
         });
+    }
+
+    async processNewBlockEvent(blockHash) {
+        // send new block to all subscribed clients
+        this.subscribedToBlockHash.forEach((clientId) => {
+            if (this.clientIds.hasOwnProperty(clientId)) {
+                this.clientIds[clientId].send(blockHash);
+            }
+        });
+
+        const block = await this.processBlockNotifyEvent(blockHash);
+        if (block != null) {
+            this.subscribedToBlock.forEach((clientId) => {
+                if (this.clientIds.hasOwnProperty(clientId)) {
+                    this.clientIds[clientId].send(block);
+                }
+            })
+        }
     }
 
     async processBlockNotifyEvent(blockHash) {
@@ -180,6 +201,18 @@ class SubscribeManager {
         SubscribeManager.removeIfValueExists(this.subscribedToAddress, socket.id);
         SubscribeManager.removeIfKeyExists(this.subscribedToBloom, socket.id);
         SubscribeManager.removeIfKeyExists(this.subscribedToBloomMempool, socket.id);
+        this.subscribedToBlockHash.delete(socket.id);
+        this.subscribedToBlock.delete(socket.id);
+    }
+
+    subscribeBlockHash(socket) {
+        this.clientIds[socket.id] = socket;
+        this.subscribedToBlockHash.add(socket.id);
+    }
+
+    subscribeBlock(socket) {
+        this.clientIds[socket.id] = socket;
+        this.subscribedToBlock.add(socket.id);
     }
 
     subscribeAddress(socket, address, includeMempool) {
