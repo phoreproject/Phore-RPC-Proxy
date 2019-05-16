@@ -38,7 +38,8 @@ class SubscribeManager {
                     continue;
                 }
 
-                this.clientIds[userId].send(tx);
+                this.clientIds[userId].send(JSON.stringify(tx));
+                console.log("Address", address, "subscribed by", userId)
             }
         }
     }
@@ -62,8 +63,9 @@ class SubscribeManager {
                 const filter = subscribedDict[userId][filterId];
 
                 for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
-                    if (filter.contains(addresses[addressIndex])) {
-                        this.clientIds[userId].send(tx);
+                    if (filter.contains(Buffer.from(addresses[addressIndex]))) {
+                        this.clientIds[userId].send(JSON.stringify(tx));
+                        console.log("Bloom filter matched by", userId)
                     }
                 }
             }
@@ -120,11 +122,19 @@ class SubscribeManager {
             }
         });
 
-        const block = await this.processBlockNotifyEvent(blockHash);
+        let block = await this.processBlockNotifyEvent(blockHash);
+        for (let trial = 0; trial < 3 && block == null; trial++){
+            block = await new Promise((resolve) => {
+                setTimeout(async ()=> {
+                    resolve(await this.processBlockNotifyEvent(blockHash));
+                }, 10000);
+            });
+        }
+
         if (block != null) {
             this.subscribedToBlock.forEach((clientId) => {
                 if (this.clientIds.hasOwnProperty(clientId)) {
-                    this.clientIds[clientId].send(block);
+                    this.clientIds[clientId].send(JSON.stringify(block));
                 }
             })
         }

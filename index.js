@@ -10,10 +10,12 @@ const config = require('./config.js'),
 // config express app
 const app = express();
 app.use(express.static('static'));
-console.log("App listen on port " + config.web_port);
-console.log("Download url: " + tools.createUri());
 
 const server = http.createServer(app);
+server.listen(config.web_port, () => {
+    console.log("App listen on port " + config.web_port);
+});
+console.log("Download url: " + tools.createUri());
 
 // config websockets
 const wss = new WebSocket.Server({server});
@@ -29,12 +31,14 @@ redisClient.subscribe(eventNames.redis.mempoolnotify);
 // new block appeared
 redisClient.on('message', async (channel, message) => {
     // write to all subscribed clients
-    if (channel === eventNames.redis.blocknotify) {
-        subscriber.processNewBlockEvent(message);
-    }
-    else if (channel === eventNames.redis.mempoolnotify) {
-        subscriber.processMemPoolEvent(message);
-    }
+    setTimeout(() => {
+        if (channel === eventNames.redis.blocknotify) {
+            subscriber.processNewBlockEvent(message);
+        }
+        else if (channel === eventNames.redis.mempoolnotify) {
+            subscriber.processMemPoolEvent(message);
+        }
+    }, 30000);
 });
 
 let wsConnectionCnt = 0;
@@ -91,8 +95,8 @@ wss.on('connection', (ws, req) => {
             }
 
             let filterHex = tools.hexToBytes(splitted[1]);
-            let hashFunc = splitted[2];
-            let tweak = splitted[3];
+            let hashFunc = parseInt(splitted[2]);
+            let tweak = parseInt(splitted[3]);
             let includeMempool = parseInt(splitted[4]);
             let flags = eventNames.bloomUpdateType.None;
 
@@ -102,6 +106,14 @@ wss.on('connection', (ws, req) => {
                 if (isNaN(flags)) {
                     return ws.send("error: flags parameter" + splitted[5] + "is not a number");
                 }
+            }
+
+            if (isNaN(hashFunc)) {
+                return ws.send("error: hashFunc parameter" + splitted[2] + "is not a number");
+            }
+
+            if (isNaN(tweak)) {
+                return ws.send("error: tweak parameter" + splitted[3] + "is not a number");
             }
 
             if (isNaN(includeMempool)) {
@@ -123,6 +135,7 @@ wss.on('connection', (ws, req) => {
         else if (message.startsWith(eventNames.subscriptions.unsubscribeAll)) {
             subscriber.unsubscribeAll(ws);
         }
+        ws.send("success");
     });
 });
 
@@ -136,4 +149,4 @@ setInterval(function ping() {
         ws.isAlive = false;
         ws.ping();
     });
-}, 30000);
+}, 300000);
