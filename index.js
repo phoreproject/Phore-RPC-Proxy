@@ -143,7 +143,7 @@ setInterval(function ping() {
     wss.clients.forEach(function (ws) {
         if (ws.isAlive === false) {
             subscriber.unsubscribeAll(ws);
-            return ws.terminate();
+            return ws.close(4000);
         }
 
         ws.isAlive = false;
