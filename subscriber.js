@@ -246,6 +246,9 @@ class SubscribeManager {
             nTweak: tweak,
             nFlags: flags,
         });
+
+        console.log("User " + socket.id + " subscribed to bloom " + filter.inspect());
+
         if (includeMempool === eventNames.includeTransactionType.include_all) {
             SubscribeManager.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
             SubscribeManager.appendToDict(this.subscribedToBloom, socket.id, filter);

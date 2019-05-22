@@ -7,6 +7,8 @@ const config = require('./config.js'),
     WebSocket = require('ws'),
     http = require('http');
 
+console.log("App version: " + require("./package").version);
+
 // config express app
 const app = express();
 app.use(express.static('static'));
