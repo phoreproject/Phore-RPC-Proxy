@@ -37,9 +37,13 @@ class SubscribeManager {
                     console.log("User id:", userId, "is missing!");
                     continue;
                 }
-
-                this.clientIds[userId].send(JSON.stringify(tx));
-                console.log("Address", address, "subscribed by", userId)
+                try {
+                    this.clientIds[userId].send(JSON.stringify(tx));
+                    console.log("Address", address, "subscribed by", userId)
+                }
+                catch (e) {
+                    console.log(e);
+                }
             }
         }
     }
@@ -59,13 +63,15 @@ class SubscribeManager {
                 continue;
             }
 
-            for (let filterId = 0; filterId < subscribedDict[userId].length; filterId++) {
-                const filter = subscribedDict[userId][filterId];
-
-                for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
-                    if (filter.contains(Buffer.from(addresses[addressIndex]))) {
+            const filter = subscribedDict[userId];
+            for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
+                if (filter.contains(Buffer.from(addresses[addressIndex]))) {
+                    try {
                         this.clientIds[userId].send(JSON.stringify(tx));
                         console.log("Bloom filter matched by", userId)
+                    }
+                    catch (e) {
+                        console.log(e);
                     }
                 }
             }
@@ -118,7 +124,12 @@ class SubscribeManager {
         // send new block to all subscribed clients
         this.subscribedToBlockHash.forEach((clientId) => {
             if (this.clientIds.hasOwnProperty(clientId)) {
-                this.clientIds[clientId].send(blockHash);
+                try {
+                    this.clientIds[clientId].send(blockHash);
+                }
+                catch (e) {
+                    console.log(e);
+                }
             }
         });
 
@@ -134,7 +145,12 @@ class SubscribeManager {
         if (block != null) {
             this.subscribedToBlock.forEach((clientId) => {
                 if (this.clientIds.hasOwnProperty(clientId)) {
-                    this.clientIds[clientId].send(JSON.stringify(block));
+                    try {
+                        this.clientIds[clientId].send(JSON.stringify(block));
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
                 }
             })
         }
@@ -178,7 +194,7 @@ class SubscribeManager {
 
     static appendToDict(dict, key, value) {
         if (key in dict) {
-            dict[key].append(value);
+            dict[key].push(value);
         }
         else {
             dict[key] = [value];
@@ -246,16 +262,15 @@ class SubscribeManager {
             nTweak: tweak,
             nFlags: flags,
         });
-
         console.log("User " + socket.id + " subscribed to bloom " + filter.inspect());
 
         if (includeMempool === eventNames.includeTransactionType.include_all) {
-            SubscribeManager.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
-            SubscribeManager.appendToDict(this.subscribedToBloom, socket.id, filter);
+            this.subscribedToBloomMempool[socket.id] = filter;
+            this.subscribedToBloom[socket.id] = filter;
         } else if (includeMempool === eventNames.includeTransactionType.only_confirmed) {
-            SubscribeManager.appendToDict(this.subscribedToBloom, socket.id, filter);
+            this.subscribedToBloom[socket.id] = filter;
         } else {
-            SubscribeManager.appendToDict(this.subscribedToBloomMempool, socket.id, filter);
+            this.subscribedToBloomMempool[socket.id] = filter;
         }
     }
 }
