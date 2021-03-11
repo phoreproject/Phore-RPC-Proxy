@@ -58,6 +58,7 @@ const AllowedMethods = new Set([
     'estimatefee',
     'estimatepriority',
     'importaddress',
+    'verifymessage',
 ]);
 
 const SpecialMethods = {
@@ -87,6 +88,10 @@ function main() {
         res.sendStatus(err.statusCode).json(err);
         next();
     });
+
+    app.get('/whitelisted', (req, res, next) => {
+        res.status(200).send({regular: AllowedMethods, special: SpecialMethods});
+    })
 
     app.post('/rpc', (req, res, next) => {
         let bodyMethod = req.body.method;
